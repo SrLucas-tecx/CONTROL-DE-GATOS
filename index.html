@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FinanzasPro - Control y Crecimiento</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <!-- Menú lateral -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-mark"><i class="fa-solid fa-wallet"></i></div>
+            <div>
+                <h2>FinanzasPro</h2>
+                <span>Control &amp; Crecimiento</span>
+            </div>
+        </div>
+        <nav>
+            <ul>
+                <li class="active"><a href="#" id="nav-dashboard" data-view="dashboard"><i class="fa-solid fa-chart-pie ico-brand"></i> Dashboard</a></li>
+                <li><a href="#" id="nav-cuentas" data-view="cuentas"><i class="fa-solid fa-vault ico-emerald"></i> Mis Cuentas</a></li>
+                <li><a href="#" id="nav-movimientos" data-view="movimientos"><i class="fa-solid fa-list-check ico-cyan"></i> Movimientos</a></li>
+                <li><a href="#" id="nav-gastos" data-view="gastos"><i class="fa-solid fa-receipt ico-amber"></i> Gastos</a></li>
+                <li><a href="#" id="nav-rendimientos" data-view="rendimientos"><i class="fa-solid fa-calculator ico-purple"></i> Rendimientos</a></li>
+                <li><a href="#" id="nav-metas" data-view="metas"><i class="fa-solid fa-bullseye ico-amber"></i> Metas de Ahorro</a></li>
+                <li><a href="#" id="nav-deudas" data-view="deudas"><i class="fa-solid fa-hand-holding-dollar ico-rose"></i> Deudas</a></li>
+                <li><a href="#" id="nav-ajustes" data-view="ajustes"><i class="fa-solid fa-sliders ico-muted"></i> Ajustes &amp; Portabilidad</a></li>
+            </ul>
+        </nav>
+        <div class="sidebar-foot">
+            <span class="status"><i class="fa-solid fa-circle"></i> Local Storage</span>
+            <p>Tus datos nunca salen de tu navegador.</p>
+        </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <main class="main-content">
+        <header>
+            <div><h1 id="page-title">Panel Principal</h1><p id="page-sub" class="sub"></p></div>
+            <div class="header-actions">
+                <button id="btn-ajuste-rapido" class="btn-outline"><i class="fa-solid fa-scale-balanced"></i> Conciliar saldos</button>
+                <button id="btn-nuevo-mov" class="btn-primary"><i class="fa-solid fa-plus"></i> Nuevo Movimiento</button>
+            </div>
+        </header>
+
+        <section class="summary-cards">
+            <div class="card glass-card">
+                <h3>Patrimonio Neto</h3>
+                <p id="patrimonio-total">$0.00</p>
+                <small>Liquidez − deudas activas</small>
+            </div>
+            <div class="card glass-card">
+                <h3>Bolsa General (Líquido)</h3>
+                <p id="liquidez-total" class="text-success">$0.00</p>
+                <small>Efectivo + débito + rendimiento</small>
+            </div>
+            <div class="card glass-card">
+                <h3>Deudas Pendientes</h3>
+                <p id="deudas-total" class="text-danger">$0.00</p>
+                <small>Saldo pendiente acumulado</small>
+            </div>
+            <div class="card glass-card">
+                <h3>Salud Financiera</h3>
+                <p><span id="salud-badge" class="badge ok">—</span></p>
+                <small id="salud-texto"></small>
+            </div>
+        </section>
+
+        <section id="module-container" class="module-container"></section>
+    </main>
+
+    <!-- Modal genérico (lo reutilizan todos los formularios) -->
+    <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal">
+            <div class="modal-head">
+                <h3 id="modal-title"></h3>
+                <button type="button" class="icon-btn" data-close aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="modal-form" autocomplete="off"></form>
+        </div>
+    </div>
+
+    <div id="toast-container" aria-live="polite"></div>
+    <input type="file" id="input-importar" accept=".json,application/json" hidden>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
