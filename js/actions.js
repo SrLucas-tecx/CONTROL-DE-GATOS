@@ -5,12 +5,13 @@ import { formCuenta } from './forms/cuenta.js';
 import { formDeuda, formAbono } from './forms/deuda.js';
 import { formMeta, formAporte } from './forms/meta.js';
 import { formAjusteRapido } from './forms/ajusteRapido.js';
+import { formPresupuesto } from './forms/presupuesto.js';
 import { formGasto, eliminarGasto } from './forms/gasto.js';
 import { exportarGastosExcel } from './services/exportGastos.js';
 import { formRecurrente } from './forms/recurrente.js';
 import { formBanco } from './forms/banco.js';
 import { formMovimiento, eliminarMovimiento } from './forms/movimiento.js';
-import { exportarDatos, importarDatos, borrarTodo, restablecer } from './services/backup.js';
+import { exportarDatos, exportarParcial, importarDatos, borrarTodo, restablecer } from './services/backup.js';
 
 const ACCIONES = {
     'cuenta-nueva':  () => formCuenta(),
@@ -22,6 +23,7 @@ const ACCIONES = {
     'meta-editar':   id => formMeta(id),
     'meta-aportar':  id => formAporte(id),
     'exportar':      () => exportarDatos(),
+    'exportar-parcial': () => exportarParcial(),
     'importar':      () => $('#input-importar').click(),
     'borrar-todo':   () => borrarTodo(),
     'restablecer':   () => restablecer(),
@@ -29,6 +31,8 @@ const ACCIONES = {
     'banco-editar':  id => formBanco(id),
     'cuenta-nueva-banco': id => formCuenta(undefined, id),
     'gasto-nuevo':   () => formGasto(),
+    'gasto-editar':  id => formGasto(id),
+    'presupuesto-editar': () => formPresupuesto(),
     'gasto-eliminar': id => eliminarGasto(id),
     'gastos-exportar': () => exportarGastosExcel(),
     'rec-nuevo':     () => formRecurrente(),

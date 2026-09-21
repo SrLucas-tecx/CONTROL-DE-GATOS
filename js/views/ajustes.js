@@ -2,10 +2,11 @@ export function vistaAjustes(c) {
     c.innerHTML = `
         <div class="settings-grid">
             <div class="card glass-card"><h4>Exportar copia de seguridad</h4>
-                <p>Descarga un archivo .json con tus cuentas, movimientos, metas y deudas. Úsalo para respaldar o traspasar tus datos.</p>
-                <button class="btn-success" data-action="exportar"><i class="fa-solid fa-download"></i> Descargar Archivo JSON</button></div>
+                <p>Descarga todo en un .json, o elige solo algunas secciones (por ejemplo, únicamente cuentas y metas).</p>
+                <button class="btn-success" data-action="exportar"><i class="fa-solid fa-download"></i> Copia completa</button>
+                <button class="btn-outline" data-action="exportar-parcial"><i class="fa-solid fa-list-check"></i> Elegir qué exportar</button></div>
             <div class="card glass-card"><h4>Importar / traspasar datos</h4>
-                <p>Selecciona un .json exportado antes para sobrescribir la información de este navegador.</p>
+                <p>Carga un .json (completo o parcial), elige qué secciones traer y si reemplazan lo actual o se combinan.</p>
                 <button class="btn-primary" data-action="importar"><i class="fa-solid fa-upload"></i> Cargar Archivo JSON</button></div>
         </div>
         <div class="card glass-card danger-zone"><h4><i class="fa-solid fa-triangle-exclamation"></i> Zona de peligro</h4>

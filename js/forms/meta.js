@@ -1,5 +1,5 @@
 import { store, buscar, persistir } from '../store.js';
-import { esc, mxn, num, r2, uid } from '../utils.js';
+import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -51,6 +51,7 @@ export function formAporte(id) {
                 if (!cuenta) return toastError('La cuenta seleccionada ya no existe.');
                 if (monto > cuenta.saldo) return toastError('La cuenta no tiene saldo suficiente.');
                 cuenta.saldo = r2(cuenta.saldo - monto);
+                store.data.movimientos.push({ id: uid(), tipo: 'EXPENSE', monto, cuenta: cuenta.id, destino: null, detalle: `Aporte a meta ${m.nombre}`, fecha: hoyISO(), externo: true, contraparte: m.nombre, informativo: true });
             }
             m.actual = r2(m.actual + monto);
             persistir();

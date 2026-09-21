@@ -1,6 +1,7 @@
 // Control de gastos: resumen mensual, gastos hormiga, cargos a tarjeta y gráficas.
 import { store, buscar } from '../store.js';
 import { esc, mxn, vacio, hoyISO } from '../utils.js';
+import { CATEGORIAS } from '../forms/gasto.js';
 import { montar, selectorTipo, configCategorias, destruirGraficos, TIPOS_CATEGORIA, TIPOS_BALANCE } from '../ui/charts.js';
 
 const PALETA = ['#8b5cf6', '#34d399', '#22d3ee', '#fbbf24', '#fb7185', '#60a5fa', '#f472b6', '#a3e635', '#94a3b8'];
@@ -33,7 +34,7 @@ export function vistaGastos(c) {
             <td>${g.hormiga ? '<span class="tag hormiga">Hormiga</span>' : '<span class="tag transfer">Normal</span>'}</td>
             <td>${g.medio === 'tarjeta' ? '💳 ' : ''}${origen(g)}</td>
             <td class="num text-danger">- ${mxn(g.monto)}</td>
-            <td class="num"><button class="icon-btn" data-action="gasto-eliminar" data-id="${g.id}" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button></td>
+            <td class="num"><button class="icon-btn" data-action="gasto-editar" data-id="${g.id}" aria-label="Editar"><i class="fa-solid fa-pen"></i></button><button class="icon-btn" data-action="gasto-eliminar" data-id="${g.id}" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button></td>
         </tr>`).join('')}</tbody></table></div>` : vacio('fa-receipt', 'No hay gastos en este mes. Usa «Agregar gasto».');
 
     c.innerHTML = `
@@ -59,6 +60,7 @@ export function vistaGastos(c) {
         <div class="card glass-card panel" style="margin-top:16px"><h3>Cargos a tarjeta en ${etiquetaMes(mes)}</h3>
             ${porTarjeta.map(x => `<div class="stat"><span>💳 ${esc(x.n)}</span><strong>${mxn(x.t)}</strong></div>`).join('') || '<p class="hint" style="margin:0">Sin cargos a tarjeta este mes.</p>'}
             <p class="hint">Pagando este total antes de la fecha límite no generas intereses.</p></div>
+        ${presupuestoCard(delMes)}
         <div class="card glass-card panel" style="margin-top:16px"><h3>Detalle de ${etiquetaMes(mes)}</h3>${tabla}</div>`;
 
     c.querySelector('#g-mes').addEventListener('change', e => {
@@ -77,4 +79,18 @@ export function vistaGastos(c) {
     montar(c.querySelector('#tipo-gmes'), c.querySelector('#chart-gmes'), tipo => configCategorias(
         tipo, ultimos.map(etiquetaMes), ultimos.map(k => suma(gastos.filter(g => g.fecha.startsWith(k)))),
         ultimos.map((_, i) => PALETA[i % PALETA.length])));
+}
+
+function presupuestoCard(delMes) {
+    const p = store.data.presupuestos || {};
+    const filas = CATEGORIAS.filter(k => p[k] > 0).map(k => {
+        const usado = suma(delMes.filter(g => g.categoria === k));
+        const pct = Math.round((usado / p[k]) * 100);
+        const color = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--amber)' : '';
+        return `<div class="pres"><div class="pres-top"><span>${k}</span><span>${mxn(usado)} / ${mxn(p[k])} (${pct}%)</span></div>
+            <div class="progress"><span style="width:${Math.min(100, pct)}%;${color ? `background:${color}` : ''}"></span></div></div>`;
+    }).join('');
+    return `<div class="card glass-card panel" style="margin-top:16px"><div class="chart-head"><h3>Presupuesto del mes</h3>
+        <button class="btn-ghost" data-action="presupuesto-editar">Definir límites</button></div>
+        ${filas || '<p class="hint" style="margin:0">Define un límite mensual por categoría (por ejemplo, Café y snacks) y aquí verás cuánto llevas.</p>'}</div>`;
 }

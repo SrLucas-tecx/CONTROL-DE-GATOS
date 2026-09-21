@@ -1,4 +1,5 @@
 import { store, buscar } from '../store.js';
+import { FRECUENCIAS, vecesAlMes, proximas } from '../services/recurrentes.js';
 import { esc, mxn, vacio } from '../utils.js';
 
 let estrategia = 'nieve'; // 'nieve' = menor monto primero · 'avalancha' = mayor tasa primero
@@ -51,19 +52,25 @@ function proximoPago(dia) {
 // Pagos que se cobran cada mes (suscripciones, rentas, mensualidades…)
 function seccionRecurrentes() {
     const lista = store.data.recurrentes;
-    const total = lista.reduce((a, r) => a + r.monto, 0);
+    const total = lista.filter(r => r.tipo !== 'ingreso').reduce((a, r) => a + r.monto * vecesAlMes(r), 0);
+    const ingresos = lista.filter(r => r.tipo === 'ingreso').reduce((a, r) => a + r.monto * vecesAlMes(r), 0);
     const medio = r => { const [t, id] = r.medio.split(':'); const x = buscar(t === 'cuenta' ? 'cuentas' : 'deudas', id); return x ? esc(x.nombre) : '<em>Eliminado</em>'; };
     const cards = lista.map(r => `
         <div class="card glass-card item-card">
             <h4><i class="fa-solid fa-calendar-check ico-amber"></i> ${esc(r.nombre)}</h4>
             ${r.lugar ? `<span class="meta">Lugar de pago: ${esc(r.lugar)}</span>` : ''}
-            <p class="amount text-danger">- ${mxn(r.monto)}</p>
-            <span class="meta">Se resta de <strong>${medio(r)}</strong> el día ${r.dia} de cada mes<br>Próximo cobro: ${proximoPago(r.dia)}</span>
+            <p class="amount ${r.tipo === 'ingreso' ? 'text-success' : 'text-danger'}">${r.tipo === 'ingreso' ? '+' : '-'} ${mxn(r.monto)}</p>
+            <span class="meta">${r.tipo === 'ingreso' ? 'Se deposita en' : 'Se resta de'} <strong>${medio(r)}</strong><br>${FRECUENCIAS[r.frecuencia || 'mensual']} · Próximo cobro: ${proxima(r)}</span>
             <div class="actions"><button class="btn-ghost" data-action="rec-editar" data-id="${r.id}"><i class="fa-solid fa-pen"></i> Editar</button></div>
         </div>`).join('');
     return `
-        <div class="module-head" style="margin-top:32px"><h2>Pagos mensuales recurrentes</h2>
-            <button class="btn-primary" data-action="rec-nuevo"><i class="fa-solid fa-plus"></i> Pago mensual</button></div>
-        ${lista.length ? `<p class="hint" style="margin:-8px 0 14px">Total comprometido al mes: <strong>${mxn(total)}</strong></p><div class="grid-cards">${cards}</div>`
+        <div class="module-head" style="margin-top:32px"><h2>Pagos e ingresos mensuales</h2>
+            <button class="btn-primary" data-action="rec-nuevo"><i class="fa-solid fa-plus"></i> Pago o ingreso</button></div>
+        ${lista.length ? `<p class="hint" style="margin:-8px 0 14px">Pagos comprometidos al mes (aprox.): <strong>${mxn(total)}</strong>${ingresos ? ` · Ingresos programados: <strong>${mxn(ingresos)}</strong>` : ''}</p><div class="grid-cards">${cards}</div>`
             : vacio('fa-calendar-check', 'Sin pagos mensuales. Agrega suscripciones, rentas o mensualidades para que se registren solos.')}`;
+}
+
+function proxima(r) {
+    const [f] = proximas(r, 1);
+    return f ? new Date(`${f}T00:00:00`).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }) : '—';
 }

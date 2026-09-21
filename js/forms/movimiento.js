@@ -68,6 +68,12 @@ export function formMovimiento() {
 
 export function eliminarMovimiento(id) {
     const m = buscar('movimientos', id);
+    if (m?.informativo) { // abonos y aportes: solo se quita el registro, no toca saldos
+        if (!confirm('Este registro es informativo: quitarlo no cambia saldos ni deudas. ¿Quitarlo?')) return;
+        store.data.movimientos = store.data.movimientos.filter(x => x.id !== id);
+        persistir();
+        return toast('Registro eliminado.');
+    }
     if (!m || !confirm('¿Eliminar este movimiento? Se revertirá su efecto en las cuentas.')) return;
     const origen = buscar('cuentas', m.cuenta);
     const destino = m.destino && buscar('cuentas', m.destino);

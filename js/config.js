@@ -5,3 +5,5 @@ export const TIPOS = {
     debito:    { label: 'Débito',    color: '#8b5cf6', icon: 'fa-credit-card' },
     inversion: { label: 'Rendimiento bancario', color: '#22d3ee', icon: 'fa-chart-line' }
 };
+
+export const KEY_RESPALDO = 'finanzaspro_ultimo_respaldo';

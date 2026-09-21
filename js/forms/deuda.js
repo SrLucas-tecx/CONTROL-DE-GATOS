@@ -1,5 +1,5 @@
 import { store, buscar, persistir } from '../store.js';
-import { esc, mxn, num, r2, uid } from '../utils.js';
+import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -56,6 +56,7 @@ export function formAbono(id) {
             if (monto > d.pendiente) return toastError('El abono supera el saldo pendiente de la deuda.');
             cuenta.saldo = r2(cuenta.saldo - monto);
             d.pendiente = r2(d.pendiente - monto);
+            store.data.movimientos.push({ id: uid(), tipo: 'EXPENSE', monto, cuenta: cuenta.id, destino: null, detalle: `Abono a ${d.nombre}`, fecha: hoyISO(), externo: true, contraparte: d.nombre, informativo: true });
             persistir();
             toast(d.pendiente === 0 ? '¡Deuda liquidada!' : `Abono de ${mxn(monto)} registrado.`);
         },

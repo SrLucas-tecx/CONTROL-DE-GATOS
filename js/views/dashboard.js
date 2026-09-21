@@ -1,7 +1,8 @@
 // Tarjetas de resumen + Panel principal (2 gráficos + últimos movimientos).
 import { TIPOS } from '../config.js';
 import { store } from '../store.js';
-import { $, mxn, vacio } from '../utils.js';
+import { $, esc, mxn, vacio, hoyISO, diasHasta } from '../utils.js';
+import { KEY_RESPALDO } from '../config.js';
 import { tablaMovs, ordenados } from './movimientos.js';
 import { montar, selectorTipo, configCategorias, TIPOS_CATEGORIA, TIPOS_BALANCE } from '../ui/charts.js';
 
@@ -34,9 +35,10 @@ export function vistaDashboard(c) {
         key, ...t, total: cuentas.filter(x => x.tipo === key).reduce((a, x) => a + Math.max(0, x.saldo), 0)
     }));
     const liquidez = totales.reduce((a, t) => a + t.total, 0);
-    const suma = tipo => movimientos.filter(m => m.tipo === tipo).reduce((a, m) => a + m.monto, 0);
+    const suma = tipo => movimientos.filter(m => m.tipo === tipo && !m.informativo).reduce((a, m) => a + m.monto, 0);
 
     c.innerHTML = `
+        ${avisosHTML()}
         <div class="dash-grid">
             <div class="card glass-card panel">
                 <div class="chart-head"><h3>Distribución de la liquidez</h3>${liquidez > 0 ? selectorTipo('tipo-liquidez', TIPOS_CATEGORIA) : ''}</div>
@@ -61,4 +63,29 @@ export function vistaDashboard(c) {
     }
     montar($('#tipo-balance'), $('#chart-balance'), tipo => configCategorias(
         tipo, ['Ingresos totales', 'Gastos totales'], [suma('INCOME'), suma('EXPENSE') + gastos.reduce((a, g) => a + g.monto, 0)], ['#10b981', '#f43f5e']));
+}
+
+// Avisos: vencimientos de tarjeta, presupuesto casi agotado y recordatorio de respaldo
+function avisosHTML() {
+    const { deudas, cuentas, gastos, presupuestos = {} } = store.data;
+    const liquidez = cuentas.reduce((a, c) => a + c.saldo, 0);
+    const av = [];
+    deudas.filter(d => d.diaPago && d.pendiente > 0).forEach(d => {
+        const dias = diasHasta(d.diaPago);
+        if (dias > 7) return;
+        const alcanza = liquidez >= d.pendiente;
+        av.push(`<div class="aviso ${alcanza ? 'ok' : 'bad'}"><span>💳 <strong>${esc(d.nombre)}</strong> vence ${dias === 0 ? 'hoy' : `en ${dias} día${dias === 1 ? '' : 's'}`}: debes ${mxn(d.pendiente)} — ${alcanza ? 'tu liquidez alcanza para pagarla' : `te faltan ${mxn(d.pendiente - liquidez)}`}.</span></div>`);
+    });
+    const mes = hoyISO().slice(0, 7);
+    Object.entries(presupuestos).forEach(([k, lim]) => {
+        const usado = gastos.filter(g => g.categoria === k && g.fecha.startsWith(mes)).reduce((a, g) => a + g.monto, 0);
+        if (usado >= lim * 0.8) av.push(`<div class="aviso ${usado >= lim ? 'bad' : ''}"><span>🎯 <strong>${esc(k)}</strong>: ${mxn(usado)} de ${mxn(lim)} (${Math.round((usado / lim) * 100)}%) del presupuesto del mes.</span></div>`);
+    });
+    let resp = null;
+    try { resp = localStorage.getItem(KEY_RESPALDO); } catch (e) { /* sin almacenamiento */ }
+    const dResp = resp ? Math.round((new Date() - new Date(`${resp}T00:00:00`)) / 864e5) : null;
+    if (dResp === null || dResp >= 7) {
+        av.push(`<div class="aviso"><span>💾 ${dResp === null ? 'Aún no has exportado un respaldo.' : `Hace ${dResp} días que no exportas un respaldo.`}</span><button class="btn-ghost" data-action="exportar">Exportar ahora</button></div>`);
+    }
+    return av.length ? `<div class="avisos">${av.join('')}</div>` : '';
 }

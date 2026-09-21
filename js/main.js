@@ -33,3 +33,4 @@ function initApp() {
 }
 
 initApp();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); // modo instalable / sin conexión

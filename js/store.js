@@ -16,7 +16,8 @@ export const datosIniciales = () => ({
     movimientos: [],
     bancos: [],
     gastos: [],
-    recurrentes: []
+    recurrentes: [],
+    presupuestos: {}
 });
 
 // Valida y normaliza datos (localStorage e importación). Devuelve null si son inválidos.
@@ -42,7 +43,8 @@ export function normalizar(d) {
         movimientos: movs.map(m => ({ ...m, id: String(m.id ?? uid()) })),
         bancos: bancos.map(b => ({ ...b, id: String(b.id ?? uid()) })),
         gastos: gastos.map(g => ({ ...g, id: String(g.id ?? uid()) })),
-        recurrentes: recurrentes.map(r => ({ ultimoMes: '', ...r, id: String(r.id ?? uid()) }))
+        recurrentes: recurrentes.map(r => ({ ultimoMes: '', ...r, id: String(r.id ?? uid()) })),
+        presupuestos: d.presupuestos && typeof d.presupuestos === 'object' ? d.presupuestos : {}
     };
 }
 

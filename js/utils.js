@@ -23,3 +23,12 @@ export const hoyISO = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
+
+// Días que faltan para la próxima vez que llega el día `dia` del mes
+export function diasHasta(dia) {
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const f = (y, m) => new Date(y, m, Math.min(dia, new Date(y, m + 1, 0).getDate()));
+    let d = f(hoy.getFullYear(), hoy.getMonth());
+    if (d < hoy) d = f(hoy.getFullYear(), hoy.getMonth() + 1);
+    return Math.round((d - hoy) / 864e5);
+}
