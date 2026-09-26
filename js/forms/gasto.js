@@ -1,5 +1,5 @@
 import { store, buscar, persistir } from '../store.js';
-import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
+import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
 import { abrirModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -16,7 +16,7 @@ function aplicar(medio, id, monto) {
     if (medio === 'cuenta') {
         const c = buscar('cuentas', id);
         if (!c) return 'La cuenta ya no existe.';
-        if (monto > c.saldo) return 'La cuenta no tiene saldo suficiente.';
+        if (monto > disponible(c)) return 'La cuenta no tiene disponible suficiente (revisa si tiene dinero apartado).';
         c.saldo = r2(c.saldo - monto);
     } else {
         const d = buscar('deudas', id);

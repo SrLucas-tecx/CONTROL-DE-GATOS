@@ -5,6 +5,7 @@ import { render } from './router.js';
 import { initAcciones } from './actions.js';
 import { aplicarRendimientos } from './services/rendimientos.js';
 import { aplicarRecurrentes } from './services/recurrentes.js';
+import { aplicarMSI } from './services/msi.js';
 import { toast } from './ui/toast.js';
 import './ui/modal.js';
 
@@ -18,8 +19,12 @@ alCambiar(() => {
 function automatizar() {
     const rend = aplicarRendimientos();
     const pagos = aplicarRecurrentes();
-    if (pagos) toast(`${pagos} pago(s) mensual(es) registrado(s) automáticamente.`);
-    return rend || pagos > 0;
+    const cuotas = aplicarMSI();
+    const mensajes = [];
+    if (pagos) mensajes.push(`${pagos} pago(s) mensual(es)`);
+    if (cuotas) mensajes.push(`${cuotas} cuota(s) de MSI`);
+    if (mensajes.length) toast(`Registrado automáticamente: ${mensajes.join(' y ')}.`);
+    return rend || pagos > 0 || cuotas > 0;
 }
 
 function initApp() {

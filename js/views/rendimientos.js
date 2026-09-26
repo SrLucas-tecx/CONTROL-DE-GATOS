@@ -1,6 +1,7 @@
 // Cuentas por banco (con o sin rendimiento) + calculadora con gráfica de proyección.
 import { store, buscar } from '../store.js';
-import { esc, mxn, vacio } from '../utils.js';
+import { ORDEN_TIPO_CUENTA } from '../config.js';
+import { esc, mxn, vacio, fmtMoneda, esMXN, saldoMXN, disponibleMXN } from '../utils.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { montar, selectorTipo, configCategorias, configSerie, TIPOS_CATEGORIA, TIPOS_SERIE } from '../ui/charts.js';
 
@@ -11,24 +12,25 @@ const opcionesUnidad = sel => [['dias', 'Días'], ['meses', 'Meses'], ['anios', 
     .map(([v, l]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${l}</option>`).join('');
 
 export function vistaRendimientos(c) {
+    const orden = (a, b) => (ORDEN_TIPO_CUENTA[a.tipo] ?? 9) - (ORDEN_TIPO_CUENTA[b.tipo] ?? 9);
     const { cuentas, bancos } = store.data;
-    const grupos = bancos.map(b => ({ id: b.id, nombre: b.nombre, cuentas: cuentas.filter(x => x.banco === b.id) }));
-    const sueltas = cuentas.filter(x => !x.banco || !buscar('bancos', x.banco));
+    const grupos = bancos.map(b => ({ id: b.id, nombre: b.nombre, cuentas: cuentas.filter(x => x.banco === b.id).sort(orden) }));
+    const sueltas = cuentas.filter(x => !x.banco || !buscar('bancos', x.banco)).sort(orden);
     if (sueltas.length) grupos.push({ id: '', nombre: 'Sin banco', cuentas: sueltas });
-    grupos.forEach(g => { g.total = g.cuentas.reduce((a, x) => a + x.saldo, 0); });
+    grupos.forEach(g => { g.total = g.cuentas.reduce((a, x) => a + saldoMXN(x), 0); });
 
     const conRend = cuentas.filter(x => x.tasa > 0);
-    const baseRend = conRend.reduce((a, x) => a + x.saldo, 0);
-    const anual = conRend.reduce((a, x) => a + x.saldo * x.tasa / 100, 0);
+    const baseRend = conRend.reduce((a, x) => a + saldoMXN(x), 0);
+    const anual = conRend.reduce((a, x) => a + saldoMXN(x) * x.tasa / 100, 0);
     const tasaProm = baseRend > 0 ? (anual / baseRend) * 100 : 0;
     const hayDatos = grupos.some(g => g.total > 0);
 
     const filaCuenta = x => `
         <div class="acc-row">
-            <div><strong>${esc(x.nombre)}</strong><br><small class="meta">${x.tasa > 0
-                ? `<span class="badge ok">${x.tasa}% anual</span> ≈ ${mxn(x.saldo * x.tasa / 1200)}/mes`
+            <div><strong>${esc(x.nombre)}</strong>${esMXN(x) ? '' : ` <span class="badge">${x.moneda}</span>`}<br><small class="meta">${x.tasa > 0
+                ? `<span class="badge ok">${x.tasa}% anual</span> ≈ ${fmtMoneda(x.saldo * x.tasa / 1200, x.moneda)}/mes`
                 : '<span class="badge">Solo saldo</span>'}</small></div>
-            <div class="acc-amt"><strong>${mxn(x.saldo)}</strong>
+            <div class="acc-amt"><strong>${fmtMoneda(x.saldo, x.moneda)}</strong>${esMXN(x) ? '' : ` <small class="meta">≈ ${mxn(saldoMXN(x))}</small>`}
                 <button class="icon-btn" data-action="cuenta-editar" data-id="${x.id}" aria-label="Editar cuenta"><i class="fa-solid fa-pen"></i></button></div>
         </div>`;
 

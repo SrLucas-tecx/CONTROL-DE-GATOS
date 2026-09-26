@@ -1,5 +1,5 @@
 import { store, buscar, persistir } from '../store.js';
-import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
+import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
@@ -52,7 +52,7 @@ export function formAbono(id) {
             const cuenta = buscar('cuentas', fd.get('cuenta'));
             const monto = num(fd.get('monto'));
             if (!cuenta || monto === null || monto <= 0) return toastError('Escribe un monto válido.');
-            if (monto > cuenta.saldo) return toastError('La cuenta de origen no tiene saldo suficiente.');
+            if (monto > disponible(cuenta)) return toastError('La cuenta de origen no tiene disponible suficiente (revisa si tiene dinero apartado).');
             if (monto > d.pendiente) return toastError('El abono supera el saldo pendiente de la deuda.');
             cuenta.saldo = r2(cuenta.saldo - monto);
             d.pendiente = r2(d.pendiente - monto);

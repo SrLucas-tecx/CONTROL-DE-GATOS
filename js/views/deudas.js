@@ -1,5 +1,6 @@
 import { store, buscar } from '../store.js';
 import { FRECUENCIAS, vecesAlMes, proximas } from '../services/recurrentes.js';
+import { restantes, montoRestante, proximaCuota } from '../services/msi.js';
 import { esc, mxn, vacio } from '../utils.js';
 
 let estrategia = 'nieve'; // 'nieve' = menor monto primero · 'avalancha' = mayor tasa primero
@@ -34,6 +35,7 @@ export function vistaDeudas(c) {
                 <button class="tab ${estrategia === 'avalancha' ? 'active' : ''}" data-estr="avalancha"><i class="fa-solid fa-mountain"></i> Avalancha (mayor tasa primero)</button>
             </div></div>
         ${filas || vacio('fa-face-smile', 'Sin deudas registradas. ¡Buen trabajo!')}
+        ${seccionMSI()}
         ${seccionRecurrentes()}`;
 
     c.querySelectorAll('[data-estr]').forEach(b => b.addEventListener('click', () => { estrategia = b.dataset.estr; vistaDeudas(c); }));
@@ -73,4 +75,27 @@ function seccionRecurrentes() {
 function proxima(r) {
     const [f] = proximas(r, 1);
     return f ? new Date(`${f}T00:00:00`).toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }) : '—';
+}
+
+// Compras a meses sin intereses: cuota mensual por tarjeta, sin afectar la tasa de interés
+function seccionMSI() {
+    const lista = store.data.msi.filter(m => restantes(m) > 0);
+    const cards = lista.map(m => {
+        const d = buscar('deudas', m.deuda);
+        const pct = Math.round((m.cobrados.length / m.meses) * 100);
+        return `
+            <div class="card glass-card item-card meta-card">
+                <h4>${esc(m.nombre)}</h4>
+                <span class="meta">💳 ${d ? esc(d.nombre) : '<em>Tarjeta eliminada</em>'} · ${m.cobrados.length}/${m.meses} cuotas pagadas</span>
+                <div class="progress" role="progressbar" aria-valuenow="${pct}"><span style="width:${pct}%"></span></div>
+                <p class="amount">${mxn(m.cuota)}<small class="meta">/mes</small></p>
+                <span class="meta">Restante: ${mxn(montoRestante(m))} · Próxima cuota: ${proximaCuota(m)}</span>
+                <div class="actions"><button class="btn-danger" data-action="msi-cancelar" data-id="${m.id}"><i class="fa-solid fa-ban"></i> Cancelar restantes</button></div>
+            </div>`;
+    }).join('');
+
+    return `
+        <div class="module-head" style="margin-top:32px"><h2>Compras a meses sin intereses</h2>
+            <button class="btn-primary" data-action="msi-nuevo"><i class="fa-solid fa-plus"></i> Nueva compra MSI</button></div>
+        ${lista.length ? `<div class="grid-cards">${cards}</div>` : vacio('fa-credit-card', 'Sin compras a MSI activas. Se registran como una cuota mensual, no como el total de golpe.')}`;
 }

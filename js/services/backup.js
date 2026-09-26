@@ -9,7 +9,7 @@ import { toast, toastError } from '../ui/toast.js';
 
 const SECCIONES = {
     cuentas: 'Cuentas', bancos: 'Bancos', deudas: 'Deudas (tarjetas y préstamos)', metas: 'Metas de ahorro',
-    movimientos: 'Movimientos', gastos: 'Gastos', recurrentes: 'Pagos e ingresos mensuales', presupuestos: 'Presupuestos'
+    movimientos: 'Movimientos', gastos: 'Gastos', recurrentes: 'Pagos e ingresos mensuales', presupuestos: 'Presupuestos', msi: 'Compras a meses sin intereses'
 };
 const cantidad = v => Array.isArray(v) ? v.length : Object.keys(v || {}).length;
 const esValida = (k, v) => k === 'presupuestos' ? !!v && typeof v === 'object' && !Array.isArray(v) : Array.isArray(v);
@@ -84,7 +84,7 @@ export function importarDatos(archivo) {
 
 export function borrarTodo() {
     if (!confirm('Se borrarán todas tus cuentas, deudas y metas. ¿Continuar?')) return;
-    reemplazarDatos({ cuentas: [], deudas: [], metas: [], movimientos: [], bancos: [], gastos: [], recurrentes: [], presupuestos: {} });
+    reemplazarDatos({ cuentas: [], deudas: [], metas: [], movimientos: [], bancos: [], gastos: [], recurrentes: [], presupuestos: {}, msi: [] });
     toast('Datos borrados.');
 }
 

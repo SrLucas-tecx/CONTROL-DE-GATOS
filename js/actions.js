@@ -2,6 +2,7 @@
 import { $ } from './utils.js';
 import { render } from './router.js';
 import { formCuenta } from './forms/cuenta.js';
+import { formApartado } from './forms/apartado.js';
 import { formDeuda, formAbono } from './forms/deuda.js';
 import { formMeta, formAporte } from './forms/meta.js';
 import { formAjusteRapido } from './forms/ajusteRapido.js';
@@ -9,6 +10,9 @@ import { formPresupuesto } from './forms/presupuesto.js';
 import { formGasto, eliminarGasto } from './forms/gasto.js';
 import { exportarGastosExcel } from './services/exportGastos.js';
 import { formRecurrente } from './forms/recurrente.js';
+import { formMSI } from './forms/msi.js';
+import { cancelarMSI } from './services/msi.js';
+import { persistir } from './store.js';
 import { formBanco } from './forms/banco.js';
 import { formMovimiento, eliminarMovimiento } from './forms/movimiento.js';
 import { exportarDatos, exportarParcial, importarDatos, borrarTodo, restablecer } from './services/backup.js';
@@ -16,6 +20,7 @@ import { exportarDatos, exportarParcial, importarDatos, borrarTodo, restablecer 
 const ACCIONES = {
     'cuenta-nueva':  () => formCuenta(),
     'cuenta-editar': id => formCuenta(id),
+    'cuenta-apartado': id => formApartado(id),
     'deuda-nueva':   () => formDeuda(),
     'deuda-editar':  id => formDeuda(id),
     'deuda-abonar':  id => formAbono(id),
@@ -35,9 +40,12 @@ const ACCIONES = {
     'presupuesto-editar': () => formPresupuesto(),
     'gasto-eliminar': id => eliminarGasto(id),
     'gastos-exportar': () => exportarGastosExcel(),
+    'msi-nuevo':     () => formMSI(),
+    'msi-cancelar':  id => { if (cancelarMSI(id)) { persistir(); } },
     'rec-nuevo':     () => formRecurrente(),
     'rec-editar':    id => formRecurrente(id),
     'mov-nuevo':     () => formMovimiento(),
+    'mov-editar':    id => formMovimiento(id),
     'mov-eliminar':  id => eliminarMovimiento(id)
 };
 

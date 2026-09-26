@@ -1,20 +1,31 @@
-import { TIPOS } from '../config.js';
+import { TIPOS, ORDEN_TIPO_CUENTA } from '../config.js';
 import { store } from '../store.js';
-import { esc, mxn, vacio } from '../utils.js';
+import { esc, mxn, vacio, disponible, totalApartado, fmtMoneda, esMXN, disponibleMXN } from '../utils.js';
 
 export function vistaCuentas(contenedor) {
-    const cards = store.data.cuentas.map(c => {
+    const ordenadas = [...store.data.cuentas].sort((a, b) => (ORDEN_TIPO_CUENTA[a.tipo] ?? 9) - (ORDEN_TIPO_CUENTA[b.tipo] ?? 9));
+
+    const cards = ordenadas.map(c => {
         const t = TIPOS[c.tipo];
+        const apartado = totalApartado(c);
+        const excede = apartado > c.saldo;
+        const nativo = !esMXN(c);
         return `
             <div class="card glass-card item-card">
                 <h4>
                     <span class="tipo-dot" style="background:${t.color}22;color:${t.color}"><i class="fa-solid ${t.icon}"></i></span>
                     ${esc(c.nombre)}
                 </h4>
-                <span><span class="badge">${t.label}</span></span>
-                <p class="amount">${mxn(c.saldo)}</p>
+                <span><span class="badge">${t.label}</span> ${nativo ? `<span class="badge">${c.moneda}</span>` : ''} ${apartado > 0 ? `<span class="badge warn">Apartado: ${fmtMoneda(apartado, c.moneda)}</span>` : ''}</span>
+                <p class="amount">${fmtMoneda(disponible(c), c.moneda)}</p>
+                <span class="meta">
+                    ${apartado > 0 ? `Disponible de ${fmtMoneda(c.saldo, c.moneda)} totales` : 'Disponible'}
+                    ${nativo ? ` · ≈ ${mxn(disponibleMXN(c))} MXN` : ''}
+                    ${excede ? ' · <span class="text-danger">lo apartado supera el saldo</span>' : ''}
+                </span>
                 <div class="actions">
                     <button class="btn-ghost" data-action="cuenta-editar" data-id="${c.id}"><i class="fa-solid fa-pen"></i> Editar</button>
+                    <button class="btn-ghost" data-action="cuenta-apartado" data-id="${c.id}"><i class="fa-solid fa-lock"></i> Apartar dinero</button>
                 </div>
             </div>`;
     }).join('');

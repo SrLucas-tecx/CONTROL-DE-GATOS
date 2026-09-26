@@ -21,7 +21,7 @@ export function tablaMovs(lista, conAcciones = false) {
             <td><strong>${esc(m.detalle || '')}</strong></td>
             <td>${nombre(m.cuenta)}${m.destino ? ` → ${nombre(m.destino)}` : ''}${m.externo ? `${m.tipo === 'INCOME' ? ' ←' : ' →'} ${esc(m.contraparte)} <span class="tag transfer">Externo</span>` : ''}</td>
             <td class="num">${monto(m)}</td>
-            ${conAcciones ? `<td class="num"><button class="icon-btn" data-action="mov-eliminar" data-id="${m.id}" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button></td>` : ''}
+            ${conAcciones ? `<td class="num">${m.automatico || m.informativo || m.tipo === 'AJUSTE' ? '' : `<button class="icon-btn" data-action="mov-editar" data-id="${m.id}" aria-label="Editar"><i class="fa-solid fa-pen"></i></button>`}<button class="icon-btn" data-action="mov-eliminar" data-id="${m.id}" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button></td>` : ''}
         </tr>`).join('')}</tbody></table></div>`;
 }
 

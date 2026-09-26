@@ -433,3 +433,14 @@ input[readonly] { opacity: 0.7; }
 .check { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 0.95rem; cursor: pointer; }
 .check input { width: 18px; height: 18px; accent-color: var(--brand); }
 .check small { color: var(--text-muted); }
+
+/* ===== dinero apartado ===== */
+.apart-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.apart-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; background: rgba(15, 23, 42, 0.5); border-radius: 10px; font-size: 0.88rem; }
+
+/* ===== multi-moneda, filtros y sliders ===== */
+.mon-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.mini-label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: #cbd5e1; }
+.slider-row { margin: 4px 0 16px; }
+.slider-row label { display: flex; justify-content: space-between; font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; }
+.slider-row input[type="range"] { width: 100%; accent-color: var(--brand); }

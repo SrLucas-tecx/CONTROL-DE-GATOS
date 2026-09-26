@@ -17,7 +17,8 @@ export const datosIniciales = () => ({
     bancos: [],
     gastos: [],
     recurrentes: [],
-    presupuestos: {}
+    presupuestos: {},
+    msi: []
 });
 
 // Valida y normaliza datos (localStorage e importación). Devuelve null si son inválidos.
@@ -35,16 +36,19 @@ export function normalizar(d) {
     const okG = gastos.every(g => g && Number.isFinite(g.monto) && typeof g.fecha === 'string' && ['cuenta', 'tarjeta'].includes(g.medio));
     const recurrentes = Array.isArray(d.recurrentes) ? d.recurrentes : [];
     const okR = recurrentes.every(r => r && typeof r.nombre === 'string' && Number.isFinite(r.monto) && Number.isFinite(r.dia) && typeof r.medio === 'string' && typeof r.desde === 'string');
-    if (!(okC && okD && okM && okV && okB && okG && okR)) return null;
+    const msi = Array.isArray(d.msi) ? d.msi : [];
+    const okMsi = msi.every(m => m && typeof m.nombre === 'string' && Number.isFinite(m.montoTotal) && Number.isFinite(m.meses));
+    if (!(okC && okD && okM && okV && okB && okG && okR && okMsi)) return null;
     return {
-        cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', ...c, id: String(c.id ?? uid()) })),
+        cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, ...c, id: String(c.id ?? uid()) })),
         deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, ...x, id: String(x.id ?? uid()) })),
         metas:   metas.map(m => ({ meses: 12, ...m, id: String(m.id ?? uid()) })),
         movimientos: movs.map(m => ({ ...m, id: String(m.id ?? uid()) })),
         bancos: bancos.map(b => ({ ...b, id: String(b.id ?? uid()) })),
         gastos: gastos.map(g => ({ ...g, id: String(g.id ?? uid()) })),
         recurrentes: recurrentes.map(r => ({ ultimoMes: '', ...r, id: String(r.id ?? uid()) })),
-        presupuestos: d.presupuestos && typeof d.presupuestos === 'object' ? d.presupuestos : {}
+        presupuestos: d.presupuestos && typeof d.presupuestos === 'object' ? d.presupuestos : {},
+        msi: msi.map(m => ({ cuota: r2 ? Math.round((m.montoTotal / m.meses) * 100) / 100 : m.montoTotal / m.meses, cobrados: [], ...m, id: String(m.id ?? uid()) }))
     };
 }
 

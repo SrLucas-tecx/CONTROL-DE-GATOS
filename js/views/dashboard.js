@@ -1,14 +1,14 @@
 // Tarjetas de resumen + Panel principal (2 gráficos + últimos movimientos).
 import { TIPOS } from '../config.js';
 import { store } from '../store.js';
-import { $, esc, mxn, vacio, hoyISO, diasHasta } from '../utils.js';
+import { $, esc, mxn, vacio, hoyISO, diasHasta, disponible, disponibleMXN } from '../utils.js';
 import { KEY_RESPALDO } from '../config.js';
 import { tablaMovs, ordenados } from './movimientos.js';
 import { montar, selectorTipo, configCategorias, TIPOS_CATEGORIA, TIPOS_BALANCE } from '../ui/charts.js';
 
 export function actualizarResumen() {
     const { cuentas, deudas } = store.data;
-    const liquidez = cuentas.reduce((a, c) => a + c.saldo, 0);
+    const liquidez = cuentas.reduce((a, c) => a + disponibleMXN(c), 0);
     const totalDeudas = deudas.reduce((a, d) => a + d.pendiente, 0);
     const patrimonio = liquidez - totalDeudas;
 
@@ -32,7 +32,7 @@ export function actualizarResumen() {
 export function vistaDashboard(c) {
     const { cuentas, movimientos, gastos } = store.data;
     const totales = Object.entries(TIPOS).map(([key, t]) => ({
-        key, ...t, total: cuentas.filter(x => x.tipo === key).reduce((a, x) => a + Math.max(0, x.saldo), 0)
+        key, ...t, total: cuentas.filter(x => x.tipo === key).reduce((a, x) => a + disponibleMXN(x), 0)
     }));
     const liquidez = totales.reduce((a, t) => a + t.total, 0);
     const suma = tipo => movimientos.filter(m => m.tipo === tipo && !m.informativo).reduce((a, m) => a + m.monto, 0);
@@ -68,7 +68,7 @@ export function vistaDashboard(c) {
 // Avisos: vencimientos de tarjeta, presupuesto casi agotado y recordatorio de respaldo
 function avisosHTML() {
     const { deudas, cuentas, gastos, presupuestos = {} } = store.data;
-    const liquidez = cuentas.reduce((a, c) => a + c.saldo, 0);
+    const liquidez = cuentas.reduce((a, c) => a + disponibleMXN(c), 0);
     const av = [];
     deudas.filter(d => d.diaPago && d.pendiente > 0).forEach(d => {
         const dias = diasHasta(d.diaPago);

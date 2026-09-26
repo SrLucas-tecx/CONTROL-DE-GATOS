@@ -7,3 +7,7 @@ export const TIPOS = {
 };
 
 export const KEY_RESPALDO = 'finanzaspro_ultimo_respaldo';
+
+export const MONEDAS = ['MXN', 'USD', 'EUR', 'Otra'];
+// Orden de aparición: rendimiento, débito, efectivo
+export const ORDEN_TIPO_CUENTA = { inversion: 0, debito: 1, efectivo: 2 };

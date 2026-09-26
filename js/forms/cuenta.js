@@ -1,4 +1,4 @@
-import { TIPOS } from '../config.js';
+import { TIPOS, MONEDAS } from '../config.js';
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
@@ -6,7 +6,7 @@ import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
 const BILLETES = [1000, 500, 200, 100, 50, 20];
-const MONEDAS = [20, 10, 5, 2, 1, 0.5];
+const DENOM_MONEDAS = [20, 10, 5, 2, 1, 0.5];
 const totalDesglose = d => Object.entries(d || {}).reduce((a, [k, q]) => a + parseFloat(k.slice(2)) * q, 0);
 
 // Bloque para contar billetes y monedas (solo cuentas de efectivo)
@@ -19,7 +19,7 @@ function conteoHTML(c) {
         ${selectHTML('¿Cómo capturas el efectivo?', 'conteo', `<option value="manual">Escribir el monto directamente</option><option value="contar" ${vigente ? 'selected' : ''}>Contar billetes y monedas</option>`)}
         <div id="conteo-grid" class="hidden">
             <p class="field-group-title">Billetes (cuántos tienes de cada uno)</p><div class="den-grid">${BILLETES.map(v => fila('b', v)).join('')}</div>
-            <p class="field-group-title">Monedas</p><div class="den-grid">${MONEDAS.map(v => fila('m', v)).join('')}</div>
+            <p class="field-group-title">Monedas</p><div class="den-grid">${DENOM_MONEDAS.map(v => fila('m', v)).join('')}</div>
             <div class="stat big"><span>Total contado</span><strong id="conteo-total">$0.00</strong></div>
         </div></div>`;
 }
@@ -34,7 +34,10 @@ export function formCuenta(id, bancoInicial = '') {
         campo('Nombre', 'nombre', `required maxlength="40" value="${esc(c?.nombre || '')}" placeholder="Ej. Cuenta nómina"`) +
         selectHTML('Tipo de cuenta', 'tipo', tipos) +
         conteoHTML(c) +
-        campo('Saldo actual (MXN)', 'saldo', attrMoneda(c ? c.saldo : '', 'required')) +
+        campo('Saldo actual', 'saldo', attrMoneda(c ? c.saldo : '', 'required')) +
+        `<div class="mon-row">` +
+        selectHTML('Moneda', 'moneda', MONEDAS.map(m => `<option ${(c?.moneda || 'MXN') === m ? 'selected' : ''}>${m}</option>`).join('')) +
+        `<div id="cambio-box" class="hidden">` + campo('Tipo de cambio a MXN', 'tipoCambio', attrMoneda(c?.tipoCambio || '1', 'min="0.0001"'), 'Ej. si $1 USD = $18 MXN, escribe 18.') + `</div></div>` +
         selectHTML('Banco o institución', 'banco', `<option value="">Sin banco</option>` +
             store.data.bancos.map(b => `<option value="${b.id}" ${(c ? c.banco : bancoInicial) === b.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')) +
         selectHTML('¿Genera rendimiento?', 'rinde',
@@ -55,7 +58,10 @@ export function formCuenta(id, bancoInicial = '') {
             const tasa = rinde ? num(fd.get('tasa')) : 0;
             if (rinde && (!tasa || tasa <= 0)) return toastError('Indica el rendimiento anual (%).');
             const ultimoRendimiento = tasa > 0 ? (c?.tasa > 0 && c.ultimoRendimiento ? c.ultimoRendimiento : hoyISO()) : '';
-            const datos = { nombre, tipo, saldo, banco: fd.get('banco'), tasa, ultimoRendimiento, desglose };
+            const moneda = fd.get('moneda');
+            const tipoCambio = moneda === 'MXN' ? 1 : num(fd.get('tipoCambio'));
+            if (moneda !== 'MXN' && (!tipoCambio || tipoCambio <= 0)) return toastError('Indica un tipo de cambio válido a MXN.');
+            const datos = { nombre, tipo, saldo, banco: fd.get('banco'), tasa, ultimoRendimiento, desglose, moneda, tipoCambio };
             if (c) Object.assign(c, datos); else store.data.cuentas.push({ id: uid(), ...datos });
             persistir();
             toast(c ? 'Cuenta actualizada.' : 'Cuenta agregada.');
@@ -85,6 +91,11 @@ export function formCuenta(id, bancoInicial = '') {
                 modo.addEventListener('change', sync);
                 dens.forEach(i => i.addEventListener('input', calcular));
                 sync();
+
+                const moneda = f.elements.moneda;
+                const syncMoneda = () => f.querySelector('#cambio-box').classList.toggle('hidden', moneda.value === 'MXN');
+                moneda.addEventListener('change', syncMoneda);
+                syncMoneda();
             }
         }
     );

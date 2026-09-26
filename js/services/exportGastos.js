@@ -35,8 +35,10 @@ export function exportarGastosExcel() {
         return toast('Excel descargado.');
     }
     const cols = Object.keys(filas[0]);
-    const csv = [cols, ...filas.map(f => cols.map(k => f[k]))]
-        .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    // Excel en español (México) usa ";" como separador de listas en CSV; con "," todo cae en una sola columna.
+    // "sep=;" en la primera línea le indica a Excel el delimitador al abrir el archivo con doble clic.
+    const csv = ['sep=;', cols, ...filas.map(f => cols.map(k => f[k]))]
+        .map(r => Array.isArray(r) ? r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';') : r).join('\n');
     const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv' })), download: `${nombre}.csv` });
     document.body.appendChild(a); a.click(); a.remove();
     toast('No se pudo cargar la librería de Excel; se descargó un CSV.');
