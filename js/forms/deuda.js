@@ -4,11 +4,17 @@ import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
-export function formDeuda(id) {
+export function formDeuda(id, tipoInicial = 'tarjeta') {
     const d = id ? buscar('deudas', id) : null;
+    const tipo = d?.tipo || tipoInicial;
     abrirModal(
         d ? 'Editar deuda' : 'Registrar deuda',
+        selectHTML('Tipo de deuda', 'tipo',
+            `<option value="tarjeta" ${tipo === 'tarjeta' ? 'selected' : ''}>Tarjeta de crédito</option>
+             <option value="prestamo" ${tipo === 'prestamo' ? 'selected' : ''}>Préstamo personal</option>
+             <option value="otro" ${tipo === 'otro' ? 'selected' : ''}>Otro</option>`) +
         campo('Nombre', 'nombre', `required maxlength="40" value="${esc(d?.nombre || '')}" placeholder="Ej. Tarjeta de crédito"`) +
+        campo('Límite de crédito (MXN) — opcional', 'limite', attrMoneda(d?.limite || '0'), 'Solo aplica si es tarjeta. Déjalo en 0 si no quieres llevarlo.') +
         campo('Saldo pendiente (MXN)', 'pendiente', attrMoneda(d ? d.pendiente : '', 'required')) +
         campo('Pago mínimo (MXN) — opcional', 'pagoMinimo', attrMoneda(d ? d.pagoMinimo : '0'), 'Déjalo en 0 si pagas el total cada mes y nunca el mínimo.') +
         campo('Día de corte — opcional', 'diaCorte', `type="number" min="0" max="31" step="1" value="${d?.diaCorte || ''}"`) +
@@ -16,15 +22,17 @@ export function formDeuda(id) {
         campo('Tasa de interés anual (%) — opcional', 'tasa', attrMoneda(d ? d.tasa : '0', 'max="1000"'), 'Déjala en 0 para compras a meses sin intereses.'),
         fd => {
             const nombre = fd.get('nombre').trim();
+            const tipoDeuda = fd.get('tipo');
+            const limite = num(fd.get('limite')) ?? 0;
             const pendiente = num(fd.get('pendiente'));
             const pagoMinimo = num(fd.get('pagoMinimo')) ?? 0;
             const tasa = num(fd.get('tasa')) ?? 0;
             const dia = k => { const n = parseInt(fd.get(k), 10); return n >= 1 && n <= 31 ? n : 0; };
             const diaCorte = dia('diaCorte'), diaPago = dia('diaPago');
             if (!nombre || pendiente === null || pendiente < 0) return toastError('Escribe un nombre y un saldo pendiente válido.');
-            if (pagoMinimo < 0 || tasa < 0) return toastError('El pago mínimo y la tasa no pueden ser negativos.');
-            if (d) Object.assign(d, { nombre, pendiente, pagoMinimo, tasa, diaCorte, diaPago });
-            else store.data.deudas.push({ id: uid(), nombre, pendiente, pagoMinimo, tasa, diaCorte, diaPago });
+            if (pagoMinimo < 0 || tasa < 0 || limite < 0) return toastError('El pago mínimo, la tasa y el límite no pueden ser negativos.');
+            if (d) Object.assign(d, { nombre, tipo: tipoDeuda, limite, pendiente, pagoMinimo, tasa, diaCorte, diaPago });
+            else store.data.deudas.push({ id: uid(), nombre, tipo: tipoDeuda, limite, pendiente, pagoMinimo, tasa, diaCorte, diaPago });
             persistir();
             toast(d ? 'Deuda actualizada.' : 'Deuda registrada.');
         },

@@ -41,7 +41,7 @@ export function normalizar(d) {
     if (!(okC && okD && okM && okV && okB && okG && okR && okMsi)) return null;
     return {
         cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, ...c, id: String(c.id ?? uid()) })),
-        deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, ...x, id: String(x.id ?? uid()) })),
+        deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, tipo: 'tarjeta', limite: 0, ...x, id: String(x.id ?? uid()) })),
         metas:   metas.map(m => ({ meses: 12, ...m, id: String(m.id ?? uid()) })),
         movimientos: movs.map(m => ({ ...m, id: String(m.id ?? uid()) })),
         bancos: bancos.map(b => ({ ...b, id: String(b.id ?? uid()) })),

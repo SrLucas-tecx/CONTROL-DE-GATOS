@@ -22,6 +22,7 @@ const ACCIONES = {
     'cuenta-editar': id => formCuenta(id),
     'cuenta-apartado': id => formApartado(id),
     'deuda-nueva':   () => formDeuda(),
+    'deuda-nueva-tarjeta': () => formDeuda(undefined, 'tarjeta'),
     'deuda-editar':  id => formDeuda(id),
     'deuda-abonar':  id => formAbono(id),
     'meta-nueva':    () => formMeta(),

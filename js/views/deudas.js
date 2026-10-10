@@ -4,6 +4,7 @@ import { restantes, montoRestante, proximaCuota } from '../services/msi.js';
 import { esc, mxn, vacio } from '../utils.js';
 
 let estrategia = 'nieve'; // 'nieve' = menor monto primero · 'avalancha' = mayor tasa primero
+const ETIQ_TIPO = { tarjeta: 'Tarjeta de crédito', prestamo: 'Préstamo personal', otro: 'Otro' };
 
 export function vistaDeudas(c) {
     const lista = [...store.data.deudas].sort(estrategia === 'nieve'
@@ -13,7 +14,7 @@ export function vistaDeudas(c) {
     const filas = lista.map((d, i) => `
         <div class="card glass-card debt-row">
             <span class="rank">#${i + 1}</span>
-            <div class="debt-info"><strong>${esc(d.nombre)}</strong> ${d.pendiente <= 0 ? '<span class="badge ok">Liquidada</span>' : ''}<br>
+            <div class="debt-info"><strong>${esc(d.nombre)}</strong> <span class="badge">${ETIQ_TIPO[d.tipo] || 'Tarjeta de crédito'}</span> ${d.pendiente <= 0 ? '<span class="badge ok">Liquidada</span>' : ''}<br>
                 ${d.pagoMinimo > 0 ? '' : '<span class="badge ok">Pago total mensual</span> '}<small>Tasa de interés: ${d.tasa > 0 ? `${d.tasa}% anual` : '0% (sin intereses)'}</small></div>
             <div class="debt-nums">
                 ${d.pagoMinimo > 0 ? `<div><small>Pago mínimo</small><strong>${mxn(d.pagoMinimo)}</strong></div>` : ''}
@@ -42,7 +43,7 @@ export function vistaDeudas(c) {
 }
 
 // Próxima fecha límite de pago a partir del día del mes
-function proximoPago(dia) {
+export function proximoPago(dia) {
     const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
     const fecha = (y, m) => new Date(y, m, Math.min(dia, new Date(y, m + 1, 0).getDate()));
     let f = fecha(hoy.getFullYear(), hoy.getMonth());
