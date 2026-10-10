@@ -1,7 +1,7 @@
 // Tarjetas de resumen + Panel principal (2 gráficos + últimos movimientos).
 import { TIPOS } from '../config.js';
 import { store } from '../store.js';
-import { $, esc, mxn, vacio, hoyISO, diasHasta, disponible, disponibleMXN } from '../utils.js';
+import { $, esc, mxn, vacio, hoyISO, diasHasta, disponible, disponibleMXN, fechaUltimoCorte } from '../utils.js';
 import { KEY_RESPALDO } from '../config.js';
 import { tablaMovs, ordenados } from './movimientos.js';
 import { montar, selectorTipo, configCategorias, TIPOS_CATEGORIA, TIPOS_BALANCE } from '../ui/charts.js';
@@ -69,12 +69,20 @@ export function vistaDashboard(c) {
 function avisosHTML() {
     const { deudas, cuentas, gastos, presupuestos = {} } = store.data;
     const liquidez = cuentas.reduce((a, c) => a + disponibleMXN(c), 0);
+    const hoy = hoyISO();
     const av = [];
     deudas.filter(d => d.diaPago && d.pendiente > 0).forEach(d => {
         const dias = diasHasta(d.diaPago);
         if (dias > 7) return;
         const alcanza = liquidez >= d.pendiente;
         av.push(`<div class="aviso ${alcanza ? 'ok' : 'bad'}"><span>💳 <strong>${esc(d.nombre)}</strong> vence ${dias === 0 ? 'hoy' : `en ${dias} día${dias === 1 ? '' : 's'}`}: debes ${mxn(d.pendiente)} — ${alcanza ? 'tu liquidez alcanza para pagarla' : `te faltan ${mxn(d.pendiente - liquidez)}`}.</span></div>`);
+    });
+    deudas.filter(d => d.diaCorte).forEach(d => {
+        const dias = diasHasta(d.diaCorte);
+        if (dias > 5) return;
+        const desde = fechaUltimoCorte(d.diaCorte);
+        const gastado = gastos.filter(g => g.medio === 'tarjeta' && g.origen === d.id && g.fecha > desde && g.fecha <= hoy).reduce((a, g) => a + g.monto, 0);
+        av.push(`<div class="aviso"><span>📅 <strong>${esc(d.nombre)}</strong> corta ${dias === 0 ? 'hoy' : `en ${dias} día${dias === 1 ? '' : 's'}`}: llevas ${mxn(gastado)} gastados en este periodo.</span></div>`);
     });
     const mes = hoyISO().slice(0, 7);
     Object.entries(presupuestos).forEach(([k, lim]) => {

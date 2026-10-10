@@ -56,7 +56,8 @@ function seccionTarjetas() {
                 ${d.limite > 0 ? `
                     <div class="progress"><span style="width:${usoPct}%;${color ? `background:${color}` : ''}"></span></div>
                     <span class="meta">Límite ${mxn(d.limite)} · Disponible ${mxn(Math.max(0, d.limite - d.pendiente))} (${usoPct}% usado)</span>`
-                    : `<span class="meta">${d.tasa > 0 ? `Tasa ${d.tasa}% anual` : 'Sin intereses'}${d.diaPago ? ` · Límite de pago: ${proximoPago(d.diaPago)}` : ''}</span>`}
+                    : `<span class="meta">${d.tasa > 0 ? `Tasa ${d.tasa}% anual` : 'Sin intereses'}</span>`}
+                <span class="meta">${d.diaCorte ? `Corte: ${proximoPago(d.diaCorte)}` : ''}${d.diaCorte && d.diaPago ? ' · ' : ''}${d.diaPago ? `Límite de pago: ${proximoPago(d.diaPago)}` : ''}</span>
                 <div class="actions">
                     <button class="btn-success" data-action="deuda-abonar" data-id="${d.id}" ${d.pendiente <= 0 ? 'disabled' : ''}><i class="fa-solid fa-dollar-sign"></i> Abonar</button>
                     <button class="btn-ghost" data-action="deuda-editar" data-id="${d.id}"><i class="fa-solid fa-pen"></i> Editar</button>

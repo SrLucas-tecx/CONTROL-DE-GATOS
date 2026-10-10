@@ -16,6 +16,8 @@ import { persistir } from './store.js';
 import { formBanco } from './forms/banco.js';
 import { formMovimiento, eliminarMovimiento } from './forms/movimiento.js';
 import { exportarDatos, exportarParcial, importarDatos, borrarTodo, restablecer } from './services/backup.js';
+import { generarReporteExcel, generarReportePDF } from './services/reporteMensual.js';
+import { hoyISO } from './utils.js';
 
 const ACCIONES = {
     'cuenta-nueva':  () => formCuenta(),
@@ -33,6 +35,8 @@ const ACCIONES = {
     'importar':      () => $('#input-importar').click(),
     'borrar-todo':   () => borrarTodo(),
     'restablecer':   () => restablecer(),
+    'reporte-excel': () => generarReporteExcel(document.getElementById('rep-mes')?.value || hoyISO().slice(0, 7)),
+    'reporte-pdf':   () => generarReportePDF(document.getElementById('rep-mes')?.value || hoyISO().slice(0, 7)),
     'banco-nuevo':   () => formBanco(),
     'banco-editar':  id => formBanco(id),
     'cuenta-nueva-banco': id => formCuenta(undefined, id),

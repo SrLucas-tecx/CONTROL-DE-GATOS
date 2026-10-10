@@ -46,3 +46,15 @@ export const esMXN = c => !c.moneda || c.moneda === 'MXN';
 export const tasaCambio = c => esMXN(c) ? 1 : (c.tipoCambio || 1);
 export const saldoMXN = c => r2(c.saldo * tasaCambio(c));
 export const disponibleMXN = c => r2(disponible(c) * tasaCambio(c));
+
+// Fecha del último corte ya pasado (para calcular "cuánto llevo gastado en este periodo")
+export function fechaUltimoCorte(dia) {
+    if (!dia) return null;
+    const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+    const pad = n => String(n).padStart(2, '0');
+    const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const f = (y, m) => { const d = new Date(y, m, 1); d.setDate(Math.min(dia, new Date(y, m + 1, 0).getDate())); return d; };
+    let d = f(hoy.getFullYear(), hoy.getMonth());
+    if (d > hoy) d = f(hoy.getFullYear(), hoy.getMonth() - 1);
+    return iso(d);
+}

@@ -1,5 +1,16 @@
+import { hoyISO } from '../utils.js';
+
 export function vistaAjustes(c) {
     c.innerHTML = `
+        <div class="card glass-card" style="margin-bottom:16px">
+            <h4>Reporte mensual</h4>
+            <p>Patrimonio, cuentas, tarjetas, gasto por categoría, metas y compras MSI de un mes, en un solo archivo.</p>
+            <div class="filters" style="margin-bottom:0">
+                <label class="mini-label">Mes <input type="month" id="rep-mes" class="input" value="${hoyISO().slice(0, 7)}"></label>
+                <button class="btn-success" data-action="reporte-excel"><i class="fa-solid fa-file-excel"></i> Descargar Excel</button>
+                <button class="btn-outline" data-action="reporte-pdf"><i class="fa-solid fa-file-pdf"></i> Ver / Imprimir PDF</button>
+            </div>
+        </div>
         <div class="settings-grid">
             <div class="card glass-card"><h4>Exportar copia de seguridad</h4>
                 <p>Descarga todo en un .json, o elige solo algunas secciones (por ejemplo, únicamente cuentas y metas).</p>
