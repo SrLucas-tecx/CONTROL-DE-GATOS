@@ -7,7 +7,18 @@ export const esc = s => String(s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
 }[c]));
 
-export const mxn = v => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+import { KEY_OCULTAR } from './config.js';
+
+// Modo privado: con el ojo activado, todos los montos se muestran como "$ ••••"
+export const privacidad = { oculto: (() => { try { return localStorage.getItem(KEY_OCULTAR) === '1'; } catch (e) { return false; } })() };
+export function fijarOculto(v) {
+    privacidad.oculto = !!v;
+    try { localStorage.setItem(KEY_OCULTAR, v ? '1' : '0'); } catch (e) { /* sin almacenamiento */ }
+}
+const MASCARA = '$ ••••';
+// mxnReal siempre muestra el número (reportes, conteo de efectivo); mxn respeta el modo privado
+export const mxnReal = v => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(v);
+export const mxn = v => privacidad.oculto ? MASCARA : mxnReal(v);
 
 // Convierte un valor de input a número con 2 decimales, o null si no es válido
 export const num = v => {
@@ -39,6 +50,7 @@ export const disponible = c => Math.max(0, r2(c.saldo - totalApartado(c)));
 
 // Multi-moneda: si la cuenta no es MXN, se convierte con su tipo de cambio guardado
 export const fmtMoneda = (v, moneda = 'MXN') => {
+    if (privacidad.oculto) return MASCARA;
     try { return new Intl.NumberFormat('es-MX', { style: 'currency', currency: moneda }).format(v); }
     catch (e) { return mxn(v); } // código de moneda no estándar (ej. "Otra")
 };

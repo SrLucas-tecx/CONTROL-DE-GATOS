@@ -2,8 +2,10 @@ import { TIPOS, ORDEN_TIPO_CUENTA } from '../config.js';
 import { store } from '../store.js';
 import { esc, mxn, vacio, disponible, totalApartado, fmtMoneda, esMXN, disponibleMXN } from '../utils.js';
 import { proximoPago } from './deudas.js';
+import { vistaBancos, vistaCalculadora } from './bancos.js';
+import { destruirGraficos } from '../ui/charts.js';
 
-export function vistaCuentas(contenedor) {
+function listaCuentas(contenedor) {
     const ordenadas = [...store.data.cuentas].sort((a, b) => (ORDEN_TIPO_CUENTA[a.tipo] ?? 9) - (ORDEN_TIPO_CUENTA[b.tipo] ?? 9));
 
     const cards = ordenadas.map(c => {
@@ -69,4 +71,14 @@ function seccionTarjetas() {
         <div class="module-head" style="margin-top:32px"><h2>Tarjetas de crédito</h2>
             <button class="btn-primary" data-action="deuda-nueva-tarjeta"><i class="fa-solid fa-plus"></i> Añadir tarjeta</button></div>
         ${tarjetas.length ? `<div class="grid-cards">${cards}</div>` : vacio('fa-credit-card', 'Sin tarjetas de crédito registradas. Para abonos y estrategias de pago completas, ve a la sección Deudas.')}`;
+}
+
+// Pestañas: la lista de cuentas, el detalle por banco con rendimiento y la calculadora (antes en "Rendimientos")
+let tabC = 'cuentas';
+const TABS_C = [['cuentas', 'Mis cuentas'], ['bancos', 'Por banco y rendimiento'], ['calculadora', 'Calculadora']];
+export function vistaCuentas(c) {
+    c.innerHTML = `<div class="tabs tabs-page" role="tablist">${TABS_C.map(([k, l]) =>
+        `<button type="button" class="tab ${tabC === k ? 'active' : ''}" role="tab" data-ctab="${k}">${l}</button>`).join('')}</div><div id="sub-cuentas"></div>`;
+    c.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click', () => { tabC = b.dataset.ctab; destruirGraficos(); vistaCuentas(c); }));
+    (tabC === 'bancos' ? vistaBancos : tabC === 'calculadora' ? vistaCalculadora : listaCuentas)(c.querySelector('#sub-cuentas'));
 }

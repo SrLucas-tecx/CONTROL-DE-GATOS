@@ -4,7 +4,7 @@ export function vistaAjustes(c) {
     c.innerHTML = `
         <div class="card glass-card" style="margin-bottom:16px">
             <h4>Reporte mensual</h4>
-            <p>Patrimonio, cuentas, tarjetas, gasto por categoría, metas y compras MSI de un mes, en un solo archivo.</p>
+            <p>Patrimonio, cuentas, tarjetas, préstamos, gasto por categoría, metas y compras MSI de un mes, en un solo archivo.</p>
             <div class="filters" style="margin-bottom:0">
                 <label class="mini-label">Mes <input type="month" id="rep-mes" class="input" value="${hoyISO().slice(0, 7)}"></label>
                 <button class="btn-success" data-action="reporte-excel"><i class="fa-solid fa-file-excel"></i> Descargar Excel</button>

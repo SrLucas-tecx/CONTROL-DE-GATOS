@@ -1,7 +1,7 @@
-// Cuentas por banco (con o sin rendimiento) + calculadora con gráfica de proyección.
+// Cuentas por banco (con o sin rendimiento) y calculadora de proyección. Antes vivían juntas en "Rendimientos".
 import { store, buscar } from '../store.js';
 import { ORDEN_TIPO_CUENTA } from '../config.js';
-import { esc, mxn, vacio, fmtMoneda, esMXN, saldoMXN, disponibleMXN } from '../utils.js';
+import { esc, mxn, vacio, fmtMoneda, esMXN, saldoMXN } from '../utils.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { montar, selectorTipo, configCategorias, configSerie, TIPOS_CATEGORIA, TIPOS_SERIE } from '../ui/charts.js';
 
@@ -11,18 +11,22 @@ const MESES_POR = { dias: 12 / 365, meses: 1, anios: 12 }; // cuántos meses dur
 const opcionesUnidad = sel => [['dias', 'Días'], ['meses', 'Meses'], ['anios', 'Años']]
     .map(([v, l]) => `<option value="${v}" ${v === sel ? 'selected' : ''}>${l}</option>`).join('');
 
-export function vistaRendimientos(c) {
+// Cuentas que generan rendimiento: base, ganancia anual y tasa promedio ponderada
+function datosRendimiento() {
+    const conRend = store.data.cuentas.filter(x => x.tasa > 0);
+    const baseRend = conRend.reduce((a, x) => a + saldoMXN(x), 0);
+    const anual = conRend.reduce((a, x) => a + saldoMXN(x) * x.tasa / 100, 0);
+    return { baseRend, anual, tasaProm: baseRend > 0 ? (anual / baseRend) * 100 : 0 };
+}
+
+export function vistaBancos(c) {
     const orden = (a, b) => (ORDEN_TIPO_CUENTA[a.tipo] ?? 9) - (ORDEN_TIPO_CUENTA[b.tipo] ?? 9);
     const { cuentas, bancos } = store.data;
     const grupos = bancos.map(b => ({ id: b.id, nombre: b.nombre, cuentas: cuentas.filter(x => x.banco === b.id).sort(orden) }));
     const sueltas = cuentas.filter(x => !x.banco || !buscar('bancos', x.banco)).sort(orden);
     if (sueltas.length) grupos.push({ id: '', nombre: 'Sin banco', cuentas: sueltas });
     grupos.forEach(g => { g.total = g.cuentas.reduce((a, x) => a + saldoMXN(x), 0); });
-
-    const conRend = cuentas.filter(x => x.tasa > 0);
-    const baseRend = conRend.reduce((a, x) => a + saldoMXN(x), 0);
-    const anual = conRend.reduce((a, x) => a + saldoMXN(x) * x.tasa / 100, 0);
-    const tasaProm = baseRend > 0 ? (anual / baseRend) * 100 : 0;
+    const { baseRend, anual, tasaProm } = datosRendimiento();
     const hayDatos = grupos.some(g => g.total > 0);
 
     const filaCuenta = x => `
@@ -60,9 +64,17 @@ export function vistaRendimientos(c) {
                 <div class="stat"><span>Ganancia estimada al año</span><strong class="text-success">${mxn(anual)}</strong></div></div>
         </div>
         <div class="grid-cards">${tarjetas}</div>`
-        : vacio('fa-building-columns', 'Agrega tu primer banco (Nu, Mercado Pago…) y después sus cuentas.')}
+        : vacio('fa-building-columns', 'Agrega tu primer banco (Nu, Mercado Pago…) y después sus cuentas.')}`;
 
-        <h2 class="section-title">Calculadora de proyección</h2>
+    if (typeof Chart === 'undefined' || !hayDatos) return;
+    montar(c.querySelector('#tipo-bancos'), c.querySelector('#chart-bancos'), tipo => configCategorias(
+        tipo, grupos.map(g => g.nombre), grupos.map(g => Math.max(0, g.total)), grupos.map((_, i) => PALETA[i % PALETA.length])));
+}
+
+export function vistaCalculadora(c) {
+    const { baseRend, tasaProm } = datosRendimiento();
+    c.innerHTML = `
+        <div class="module-head"><h2>Calculadora de proyección</h2></div>
         <div class="dash-grid">
             <div class="card glass-card panel"><h3>Parámetros</h3><form id="calc" class="calc-form" autocomplete="off">
                 ${campo('Capital inicial (MXN)', 'capital', attrMoneda('10000'))}
@@ -81,12 +93,6 @@ export function vistaRendimientos(c) {
         </div>`;
 
     if (typeof Chart === 'undefined') return;
-
-    if (hayDatos) {
-        montar(c.querySelector('#tipo-bancos'), c.querySelector('#chart-bancos'), tipo => configCategorias(
-            tipo, grupos.map(g => g.nombre), grupos.map(g => Math.max(0, g.total)), grupos.map((_, i) => PALETA[i % PALETA.length])));
-    }
-
     const form = c.querySelector('#calc');
     let datos = { labels: [], saldo: [], aportado: [] };
     const grafico = montar(c.querySelector('#tipo-proy'), c.querySelector('#chart-proy'),

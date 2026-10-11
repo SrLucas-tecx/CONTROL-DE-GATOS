@@ -6,6 +6,8 @@ export const TIPOS = {
     inversion: { label: 'Rendimiento bancario', color: '#22d3ee', icon: 'fa-chart-line' }
 };
 
+export const KEY_INICIO = 'finanzaspro_inicio_prefs';
+export const KEY_OCULTAR = 'finanzaspro_ocultar_montos';
 export const KEY_RESPALDO = 'finanzaspro_ultimo_respaldo';
 
 export const MONEDAS = ['MXN', 'USD', 'EUR', 'Otra'];

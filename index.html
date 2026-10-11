@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>FinanzasPro - Control y Crecimiento</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
@@ -24,14 +24,13 @@
         </div>
         <nav>
             <ul>
-                <li class="active"><a href="#" id="nav-dashboard" data-view="dashboard"><i class="fa-solid fa-chart-pie"></i> Dashboard</a></li>
-                <li><a href="#" id="nav-cuentas" data-view="cuentas"><i class="fa-solid fa-vault"></i> Mis Cuentas</a></li>
-                <li><a href="#" id="nav-movimientos" data-view="movimientos"><i class="fa-solid fa-list-check"></i> Movimientos</a></li>
-                <li><a href="#" id="nav-gastos" data-view="gastos"><i class="fa-solid fa-receipt"></i> Gastos</a></li>
-                <li><a href="#" id="nav-rendimientos" data-view="rendimientos"><i class="fa-solid fa-calculator"></i> Rendimientos</a></li>
-                <li><a href="#" id="nav-metas" data-view="metas"><i class="fa-solid fa-bullseye"></i> Metas de Ahorro</a></li>
+                <li class="active"><a href="#" id="nav-dashboard" data-view="dashboard"><i class="fa-solid fa-chart-pie ico-brand"></i> Inicio</a></li>
+                <li><a href="#" id="nav-cuentas" data-view="cuentas"><i class="fa-solid fa-vault ico-emerald"></i> Cuentas</a></li>
+                <li><a href="#" id="nav-movimientos" data-view="movimientos"><i class="fa-solid fa-list-check ico-cyan"></i> Movimientos</a></li>
                 <li><a href="#" id="nav-deudas" data-view="deudas"><i class="fa-solid fa-hand-holding-dollar ico-rose"></i> Deudas</a></li>
-                <li><a href="#" id="nav-ajustes" data-view="ajustes"><i class="fa-solid fa-sliders"></i> Ajustes &amp; Portabilidad</a></li>
+                <li><a href="#" id="nav-prestamos" data-view="prestamos"><i class="fa-solid fa-handshake ico-purple"></i> Préstamos</a></li>
+                <li><a href="#" id="nav-metas" data-view="metas"><i class="fa-solid fa-bullseye ico-amber"></i> Metas de Ahorro</a></li>
+                <li><a href="#" id="nav-ajustes" data-view="ajustes"><i class="fa-solid fa-sliders ico-muted"></i> Ajustes &amp; Portabilidad</a></li>
             </ul>
         </nav>
         <div class="sidebar-foot">
@@ -45,33 +44,16 @@
         <header>
             <div><h1 id="page-title">Panel Principal</h1><p id="page-sub" class="sub"></p></div>
             <div class="header-actions">
-                <button id="btn-ajuste-rapido" class="btn-outline"><i class="fa-solid fa-scale-balanced"></i> Conciliar saldos</button>
+                <button id="btn-ojo" class="btn-outline icon-only" type="button" aria-pressed="false" aria-label="Ocultar montos" title="Ocultar montos"><i class="fa-solid fa-eye"></i></button>
+                <div class="menu-wrap">
+                    <button id="btn-menu" class="btn-outline icon-only" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Más acciones" title="Más acciones"><i class="fa-solid fa-ellipsis"></i></button>
+                    <div id="menu-header" class="menu hidden" role="menu">
+                        <button id="btn-ajuste-rapido" class="menu-item" type="button" role="menuitem"><i class="fa-solid fa-scale-balanced"></i> Conciliar saldos</button>
+                    </div>
+                </div>
                 <button id="btn-nuevo-mov" class="btn-primary"><i class="fa-solid fa-plus"></i> Nuevo Movimiento</button>
             </div>
         </header>
-
-        <section class="summary-cards">
-            <div class="card surface">
-                <h3>Patrimonio Neto</h3>
-                <p id="patrimonio-total">$0.00</p>
-                <small>Liquidez − deudas activas</small>
-            </div>
-            <div class="card surface">
-                <h3>Bolsa General (Líquido)</h3>
-                <p id="liquidez-total" class="text-success">$0.00</p>
-                <small>Efectivo + débito + rendimiento</small>
-            </div>
-            <div class="card surface">
-                <h3>Deudas Pendientes</h3>
-                <p id="deudas-total" class="text-danger">$0.00</p>
-                <small>Saldo pendiente acumulado</small>
-            </div>
-            <div class="card surface">
-                <h3>Salud Financiera</h3>
-                <p><span id="salud-badge" class="badge ok">—</span></p>
-                <small id="salud-texto"></small>
-            </div>
-        </section>
 
         <section id="module-container" class="module-container"></section>
     </main>
@@ -86,6 +68,20 @@
             <form id="modal-form" autocomplete="off"></form>
         </div>
     </div>
+
+    <!-- Navegación inferior (solo móvil) -->
+    <nav class="bottom-nav" aria-label="Navegación principal">
+        <a href="#" class="bn-item active" data-view="dashboard"><i class="fa-solid fa-chart-pie"></i><span>Inicio</span></a>
+        <a href="#" class="bn-item" data-view="cuentas"><i class="fa-solid fa-vault"></i><span>Cuentas</span></a>
+        <a href="#" class="bn-item" data-view="movimientos"><i class="fa-solid fa-list-check"></i><span>Movimientos</span></a>
+        <a href="#" class="bn-item" data-view="deudas"><i class="fa-solid fa-hand-holding-dollar"></i><span>Deudas</span></a>
+        <button type="button" id="bn-mas" class="bn-item" aria-haspopup="true" aria-expanded="false"><i class="fa-solid fa-ellipsis"></i><span>Más</span></button>
+        <div id="bn-sheet" class="bn-sheet hidden" role="menu">
+            <a href="#" class="bn-sheet-item" data-view="prestamos" role="menuitem"><i class="fa-solid fa-handshake"></i> Préstamos</a>
+            <a href="#" class="bn-sheet-item" data-view="metas" role="menuitem"><i class="fa-solid fa-bullseye"></i> Metas de Ahorro</a>
+            <a href="#" class="bn-sheet-item" data-view="ajustes" role="menuitem"><i class="fa-solid fa-sliders"></i> Ajustes</a>
+        </div>
+    </nav>
 
     <div id="toast-container" aria-live="polite"></div>
     <input type="file" id="input-importar" accept=".json,application/json" hidden>

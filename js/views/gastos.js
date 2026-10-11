@@ -2,6 +2,7 @@
 import { store, buscar } from '../store.js';
 import { esc, mxn, num, vacio, hoyISO } from '../utils.js';
 import { CATEGORIAS } from '../forms/gasto.js';
+import { menuFila } from '../ui/rowmenu.js';
 import { montar, selectorTipo, configCategorias, destruirGraficos, TIPOS_CATEGORIA, TIPOS_BALANCE } from '../ui/charts.js';
 
 const PALETA = ['#8b5cf6', '#34d399', '#22d3ee', '#fbbf24', '#fb7185', '#60a5fa', '#f472b6', '#a3e635', '#94a3b8'];
@@ -13,6 +14,9 @@ const etiquetaMes = k => { const [y, m] = k.split('-'); return new Date(y, m - 1
 const origen = g => { const x = buscar(g.medio === 'tarjeta' ? 'deudas' : 'cuentas', g.origen); return x ? esc(x.nombre) : '<em>Eliminado</em>'; };
 // Comparación lexicográfica de "YYYY-MM": funciona igual que comparar fechas
 const enRango = (f, d, h) => f.slice(0, 7) >= d && f.slice(0, 7) <= h;
+
+const TABS = [['resumen', 'Resumen'], ['detalle', 'Detalle'], ['presupuesto', 'Presupuesto']];
+let tab = 'resumen'; // pestaña activa (se recuerda mientras dura la sesión)
 
 export function vistaGastos(c) {
     const { gastos, deudas } = store.data;
@@ -32,21 +36,20 @@ export function vistaGastos(c) {
     const categoriasFiltro = [...new Set([...CATEGORIAS, ...delRango.map(g => g.categoria)])];
     const montoMax = Math.max(50, ...delRango.map(g => g.monto), 0);
 
-    c.innerHTML = `
-        <div class="module-head"><h2>Control de gastos</h2>
-            <div class="header-actions">
-                <button class="btn-outline" data-action="gastos-exportar"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
-                <button class="btn-primary" data-action="gasto-nuevo"><i class="fa-solid fa-plus"></i> Agregar gasto</button></div></div>
-        <div class="filters">
+    // Presupuesto es mensual: solo pide un mes. Resumen y Detalle usan el rango Desde / Hasta.
+    const filtros = tab === 'presupuesto'
+        ? `<div class="filters"><label class="mini-label">Mes <input type="month" id="g-mes" class="input" value="${hasta}"></label></div>`
+        : `<div class="filters">
             <label class="mini-label">Desde <input type="month" id="g-desde" class="input" value="${desde}"></label>
-            <label class="mini-label">Hasta <input type="month" id="g-hasta" class="input" value="${hasta}"></label>
-        </div>
+            <label class="mini-label">Hasta <input type="month" id="g-hasta" class="input" value="${hasta}"></label></div>`;
+
+    const resumenHTML = `
         <section class="summary-cards">
             <div class="card glass-card"><h3>Gasto del periodo</h3><p class="text-danger">${mxn(total)}</p><small>${delRango.length} gastos en ${etiquetaRango}</small></div>
             <div class="card glass-card"><h3>Gastos hormiga</h3><p style="color:var(--amber)">${mxn(hormiga)}</p><small>${total > 0 ? Math.round((hormiga / total) * 100) : 0}% del periodo</small></div>
             <div class="card glass-card"><h3>Cargado a tarjetas</h3><p>${mxn(conTarjeta)}</p><small>Por pagar a fin de mes</small></div>
-            <div class="card glass-card"><h3>Total registrado</h3><p>${mxn(suma(gastos))}</p><small>${gastos.length} gastos en total</small></div>
         </section>
+        <p class="hint" style="margin:-14px 0 16px">Total registrado en la app: ${mxn(suma(gastos))} en ${gastos.length} gastos.</p>
         <div class="dash-grid">
             <div class="card glass-card panel">
                 <div class="chart-head"><h3>Por categoría</h3>${total > 0 ? selectorTipo('tipo-gcat', TIPOS_CATEGORIA) : ''}</div>
@@ -57,9 +60,10 @@ export function vistaGastos(c) {
         </div>
         <div class="card glass-card panel" style="margin-top:16px"><h3>Cargos a tarjeta en ${etiquetaRango}</h3>
             ${porTarjeta.map(x => `<div class="stat"><span>💳 ${esc(x.n)}</span><strong>${mxn(x.t)}</strong></div>`).join('') || '<p class="hint" style="margin:0">Sin cargos a tarjeta en este periodo.</p>'}
-            <p class="hint">Pagando este total antes de la fecha límite no generas intereses.</p></div>
-        ${presupuestoCard()}
-        <div class="card glass-card panel" style="margin-top:16px">
+            <p class="hint">Pagando este total antes de la fecha límite no generas intereses.</p></div>`;
+
+    const detalleHTML = `
+        <div class="card glass-card panel">
             <h3>Detalle de ${etiquetaRango}</h3>
             <div class="filters">
                 <input id="g-q" class="input" placeholder="Buscar por descripción...">
@@ -72,34 +76,49 @@ export function vistaGastos(c) {
             <div id="g-tabla"></div>
         </div>`;
 
-    // Filtros de la tabla de detalle: no tocan las gráficas ni las tarjetas de resumen
-    const q = c.querySelector('#g-q'), cat = c.querySelector('#g-cat'), rango = c.querySelector('#g-monto'), val = c.querySelector('#g-monto-val');
-    const pintarTabla = () => {
-        val.textContent = mxn(num(rango.value) || 0);
-        const txt = q.value.trim().toLowerCase(), montoMin = parseFloat(rango.value) || 0;
-        const lista = delRango
-            .filter(g => (!cat.value || g.categoria === cat.value) && g.monto >= montoMin && (g.detalle || g.categoria).toLowerCase().includes(txt))
-            .sort((a, b) => b.fecha.localeCompare(a.fecha));
-        c.querySelector('#g-tabla').innerHTML = lista.length ? `<div class="table-wrap"><table>
-            <thead><tr><th>Fecha</th><th>Gasto</th><th>Tipo</th><th>Pagado con</th><th class="num">Monto</th><th></th></tr></thead>
-            <tbody>${lista.map(g => `<tr>
-                <td>${esc(g.fecha)}</td>
-                <td><strong>${esc(g.detalle || g.categoria)}</strong><br><small class="meta">${esc(g.categoria)}</small></td>
-                <td>${g.hormiga ? '<span class="tag hormiga">Hormiga</span>' : '<span class="tag transfer">Normal</span>'}</td>
-                <td>${g.medio === 'tarjeta' ? '💳 ' : ''}${origen(g)}</td>
-                <td class="num text-danger">- ${mxn(g.monto)}</td>
-                <td class="num"><button class="icon-btn" data-action="gasto-editar" data-id="${g.id}" aria-label="Editar"><i class="fa-solid fa-pen"></i></button><button class="icon-btn" data-action="gasto-eliminar" data-id="${g.id}" aria-label="Eliminar"><i class="fa-solid fa-trash"></i></button></td>
-            </tr>`).join('')}</tbody></table></div>` : vacio('fa-receipt', 'Ningún gasto coincide con los filtros.');
-    };
-    q.addEventListener('input', pintarTabla);
-    cat.addEventListener('change', pintarTabla);
-    rango.addEventListener('input', pintarTabla);
-    pintarTabla();
+    c.innerHTML = `
+        <div class="module-head"><h2>Control de gastos</h2>
+            <div class="header-actions">
+                <button class="btn-outline" data-action="gastos-exportar"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
+                <button class="btn-primary" data-action="gasto-nuevo"><i class="fa-solid fa-plus"></i> Agregar gasto</button></div></div>
+        <div class="tabs tabs-page" role="tablist">${TABS.map(([k, l]) =>
+            `<button type="button" class="tab ${tab === k ? 'active' : ''}" role="tab" aria-selected="${tab === k}" data-gtab="${k}">${l}</button>`).join('')}</div>
+        ${filtros}
+        ${tab === 'resumen' ? resumenHTML : tab === 'detalle' ? detalleHTML : presupuestoCard()}`;
 
-    c.querySelector('#g-desde').addEventListener('change', e => { if (e.target.value) { desde = e.target.value; destruirGraficos(); vistaGastos(c); } });
-    c.querySelector('#g-hasta').addEventListener('change', e => { if (e.target.value) { hasta = e.target.value; destruirGraficos(); vistaGastos(c); } });
+    const repintar = () => { destruirGraficos(); vistaGastos(c); };
+    c.querySelectorAll('[data-gtab]').forEach(b => b.addEventListener('click', () => { tab = b.dataset.gtab; repintar(); }));
+    c.querySelector('#g-desde')?.addEventListener('change', e => { if (e.target.value) { desde = e.target.value; repintar(); } });
+    c.querySelector('#g-hasta')?.addEventListener('change', e => { if (e.target.value) { hasta = e.target.value; repintar(); } });
+    c.querySelector('#g-mes')?.addEventListener('change', e => { if (e.target.value) { hasta = e.target.value; if (desde > hasta) desde = hasta; repintar(); } });
 
-    if (typeof Chart === 'undefined') return;
+    if (tab === 'detalle') {
+        // Más reciente arriba; en el mismo día, el último capturado primero
+        const orden = new Map(gastos.map((g, i) => [g.id, i]));
+        const q = c.querySelector('#g-q'), cat = c.querySelector('#g-cat'), rango = c.querySelector('#g-monto'), val = c.querySelector('#g-monto-val');
+        const pintarTabla = () => {
+            val.textContent = mxn(num(rango.value) || 0);
+            const txt = q.value.trim().toLowerCase(), montoMin = parseFloat(rango.value) || 0;
+            const lista = delRango
+                .filter(g => (!cat.value || g.categoria === cat.value) && g.monto >= montoMin && (g.detalle || g.categoria).toLowerCase().includes(txt))
+                .sort((a, b) => b.fecha.localeCompare(a.fecha) || orden.get(b.id) - orden.get(a.id));
+            c.querySelector('#g-tabla').innerHTML = lista.length ? `<div class="table-wrap"><table>
+                <thead><tr><th>Fecha</th><th>Gasto</th><th>Pagado con</th><th class="num">Monto</th><th></th></tr></thead>
+                <tbody>${lista.map(g => `<tr>
+                    <td>${esc(g.fecha)}</td>
+                    <td><strong>${esc(g.detalle || g.categoria)}</strong>${g.hormiga ? ' <span class="tag hormiga">Hormiga</span>' : ''}<br><small class="meta">${esc(g.categoria)}</small></td>
+                    <td>${g.medio === 'tarjeta' ? '💳 ' : ''}${origen(g)}</td>
+                    <td class="num text-danger">- ${mxn(g.monto)}</td>
+                    <td class="num">${menuFila(g.id, [['gasto-editar', 'Editar', 'fa-pen'], ['gasto-eliminar', 'Eliminar', 'fa-trash', true]])}</td>
+                </tr>`).join('')}</tbody></table></div>` : vacio('fa-receipt', 'Ningún gasto coincide con los filtros.');
+        };
+        q.addEventListener('input', pintarTabla);
+        cat.addEventListener('change', pintarTabla);
+        rango.addEventListener('input', pintarTabla);
+        pintarTabla();
+    }
+
+    if (tab !== 'resumen' || typeof Chart === 'undefined') return;
     if (total > 0) {
         montar(c.querySelector('#tipo-gcat'), c.querySelector('#chart-gcat'), tipo => configCategorias(
             tipo, cats.map(x => x.k), cats.map(x => x.t), cats.map((_, i) => PALETA[i % PALETA.length]),
@@ -121,7 +140,7 @@ function presupuestoCard() {
         return `<div class="pres"><div class="pres-top"><span>${k}</span><span>${mxn(usado)} / ${mxn(p[k])} (${pct}%)</span></div>
             <div class="progress"><span style="width:${Math.min(100, pct)}%;${color ? `background:${color}` : ''}"></span></div></div>`;
     }).join('');
-    return `<div class="card glass-card panel" style="margin-top:16px"><div class="chart-head"><h3>Presupuesto de ${etiquetaMes(hasta)}</h3>
+    return `<div class="card glass-card panel"><div class="chart-head"><h3>Presupuesto de ${etiquetaMes(hasta)}</h3>
         <button class="btn-ghost" data-action="presupuesto-editar">Definir límites</button></div>
         ${filas || '<p class="hint" style="margin:0">Define un límite mensual por categoría (por ejemplo, Café y snacks) y aquí verás cuánto llevas.</p>'}</div>`;
 }

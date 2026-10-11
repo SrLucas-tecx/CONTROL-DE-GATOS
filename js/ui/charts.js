@@ -1,9 +1,9 @@
 // Gráficos: registro, selector de tipo y configuraciones reutilizables (Chart.js).
-import { mxn } from '../utils.js';
+import { mxn, privacidad } from '../utils.js';
 
 let activos = [];
 const pref = {}; // recuerda el tipo elegido por gráfico mientras dura la sesión
-const mxnCorto = v => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', notation: 'compact', maximumFractionDigits: 1 }).format(v);
+const mxnCorto = v => privacidad.oculto ? '' : new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', notation: 'compact', maximumFractionDigits: 1 }).format(v);
 const GRID = 'rgba(255,255,255,.06)';
 
 export const TIPOS_CATEGORIA = { doughnut: 'Dona', pie: 'Pastel', polarArea: 'Polar', bar: 'Barras' };
@@ -13,9 +13,11 @@ export const TIPOS_SERIE     = { line: 'Línea', area: 'Área', bar: 'Barras', s
 export const registrar = g => { activos.push(g); return g; };
 export function destruirGraficos() { activos.forEach(g => g.destroy()); activos = []; }
 
+// Un ícono de ajustes; al pulsarlo aparece el selector de tipo (la lógica del clic está en actions.js)
 export const selectorTipo = (id, tipos) =>
-    `<select id="${id}" class="input chart-type" aria-label="Tipo de gráfico">${Object.entries(tipos)
-        .map(([k, l]) => `<option value="${k}" ${pref[id] === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+    `<span class="chart-opt"><button type="button" class="icon-btn chart-gear" data-chartgear aria-label="Cambiar tipo de gráfico" title="Tipo de gráfico"><i class="fa-solid fa-gear"></i></button>`
+    + `<select id="${id}" class="input chart-type hidden" aria-label="Tipo de gráfico">${Object.entries(tipos)
+        .map(([k, l]) => `<option value="${k}" ${pref[id] === k ? 'selected' : ''}>${l}</option>`).join('')}</select></span>`;
 
 // Dibuja el gráfico y lo redibuja cuando cambia el selector. Devuelve { repintar }.
 export function montar(select, canvas, construir) {

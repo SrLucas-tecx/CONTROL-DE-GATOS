@@ -4,6 +4,7 @@ import { restantes, montoRestante, proximaCuota } from '../services/msi.js';
 import { ETIQ_TIPO_DEUDA } from '../services/deudaEtiquetas.js';
 import { esc, mxn, vacio } from '../utils.js';
 
+let tabD = 'deudas'; // 'deudas' | 'msi' | 'rec'
 let estrategia = 'nieve'; // 'nieve' = menor monto primero · 'avalancha' = mayor tasa primero
 
 export function vistaDeudas(c) {
@@ -27,7 +28,7 @@ export function vistaDeudas(c) {
             </div>
         </div>`).join('');
 
-    c.innerHTML = `
+    const deudasHTML = `
         <div class="module-head"><h2>Estrategias de liberación de deuda</h2>
             <button class="btn-primary" data-action="deuda-nueva"><i class="fa-solid fa-plus"></i> Registrar Deuda</button></div>
         <div class="card glass-card strat"><strong>Estrategia de ordenamiento:</strong>
@@ -35,9 +36,13 @@ export function vistaDeudas(c) {
                 <button class="tab ${estrategia === 'nieve' ? 'active' : ''}" data-estr="nieve"><i class="fa-regular fa-snowflake"></i> Bola de Nieve (menor monto primero)</button>
                 <button class="tab ${estrategia === 'avalancha' ? 'active' : ''}" data-estr="avalancha"><i class="fa-solid fa-mountain"></i> Avalancha (mayor tasa primero)</button>
             </div></div>
-        ${filas || vacio('fa-face-smile', 'Sin deudas registradas. ¡Buen trabajo!')}
-        ${seccionMSI()}
-        ${seccionRecurrentes()}`;
+        ${filas || vacio('fa-face-smile', 'Sin deudas registradas. ¡Buen trabajo!')}`;
+
+    const TABS = [['deudas', 'Deudas'], ['msi', 'Meses sin intereses'], ['rec', 'Pagos recurrentes']];
+    c.innerHTML = `<div class="tabs tabs-page" role="tablist">${TABS.map(([k, l]) =>
+        `<button type="button" class="tab ${tabD === k ? 'active' : ''}" role="tab" data-dtab="${k}">${l}</button>`).join('')}</div>
+        ${tabD === 'msi' ? seccionMSI() : tabD === 'rec' ? seccionRecurrentes() : deudasHTML}`;
+    c.querySelectorAll('[data-dtab]').forEach(b => b.addEventListener('click', () => { tabD = b.dataset.dtab; vistaDeudas(c); }));
 
     c.querySelectorAll('[data-estr]').forEach(b => b.addEventListener('click', () => { estrategia = b.dataset.estr; vistaDeudas(c); }));
 }
@@ -67,7 +72,7 @@ function seccionRecurrentes() {
             <div class="actions"><button class="btn-ghost" data-action="rec-editar" data-id="${r.id}"><i class="fa-solid fa-pen"></i> Editar</button></div>
         </div>`).join('');
     return `
-        <div class="module-head" style="margin-top:32px"><h2>Pagos e ingresos mensuales</h2>
+        <div class="module-head"><h2>Pagos e ingresos mensuales</h2>
             <button class="btn-primary" data-action="rec-nuevo"><i class="fa-solid fa-plus"></i> Pago o ingreso</button></div>
         ${lista.length ? `<p class="hint" style="margin:-8px 0 14px">Pagos comprometidos al mes (aprox.): <strong>${mxn(total)}</strong>${ingresos ? ` · Ingresos programados: <strong>${mxn(ingresos)}</strong>` : ''}</p><div class="grid-cards">${cards}</div>`
             : vacio('fa-calendar-check', 'Sin pagos mensuales. Agrega suscripciones, rentas o mensualidades para que se registren solos.')}`;
@@ -96,7 +101,7 @@ function seccionMSI() {
     }).join('');
 
     return `
-        <div class="module-head" style="margin-top:32px"><h2>Compras a meses sin intereses</h2>
+        <div class="module-head"><h2>Compras a meses sin intereses</h2>
             <button class="btn-primary" data-action="msi-nuevo"><i class="fa-solid fa-plus"></i> Nueva compra MSI</button></div>
         ${lista.length ? `<div class="grid-cards">${cards}</div>` : vacio('fa-credit-card', 'Sin compras a MSI activas. Se registran como una cuota mensual, no como el total de golpe.')}`;
 }

@@ -1,6 +1,6 @@
 import { TIPOS, MONEDAS } from '../config.js';
 import { store, buscar, persistir } from '../store.js';
-import { esc, mxn, num, r2, uid, hoyISO } from '../utils.js';
+import { esc, mxnReal as mxn, num, r2, uid, hoyISO } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';

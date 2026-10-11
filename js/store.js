@@ -1,7 +1,7 @@
 // Estado de la aplicación + persistencia en localStorage.
 // Los demás módulos mutan store.data y llaman a persistir().
 import { STORAGE_KEY, TIPOS } from './config.js';
-import { uid } from './utils.js';
+import { uid, r2 } from './utils.js';
 import { toast } from './ui/toast.js';
 
 export const datosIniciales = () => ({
@@ -18,7 +18,8 @@ export const datosIniciales = () => ({
     gastos: [],
     recurrentes: [],
     presupuestos: {},
-    msi: []
+    msi: [],
+    prestamos: []
 });
 
 // Valida y normaliza datos (localStorage e importación). Devuelve null si son inválidos.
@@ -38,7 +39,9 @@ export function normalizar(d) {
     const okR = recurrentes.every(r => r && typeof r.nombre === 'string' && Number.isFinite(r.monto) && Number.isFinite(r.dia) && typeof r.medio === 'string' && typeof r.desde === 'string');
     const msi = Array.isArray(d.msi) ? d.msi : [];
     const okMsi = msi.every(m => m && typeof m.nombre === 'string' && Number.isFinite(m.montoTotal) && Number.isFinite(m.meses));
-    if (!(okC && okD && okM && okV && okB && okG && okR && okMsi)) return null;
+    const prestamos = Array.isArray(d.prestamos) ? d.prestamos : [];
+    const okP = prestamos.every(p => p && ['recibido', 'otorgado'].includes(p.direccion) && typeof p.contraparte === 'string' && Number.isFinite(p.monto) && Number.isFinite(p.pendiente));
+    if (!(okC && okD && okM && okV && okB && okG && okR && okMsi && okP)) return null;
     return {
         cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, ...c, id: String(c.id ?? uid()) })),
         deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, tipo: 'tarjeta', limite: 0, ...x, id: String(x.id ?? uid()) })),
@@ -48,7 +51,9 @@ export function normalizar(d) {
         gastos: gastos.map(g => ({ ...g, id: String(g.id ?? uid()) })),
         recurrentes: recurrentes.map(r => ({ ultimoMes: '', ...r, id: String(r.id ?? uid()) })),
         presupuestos: d.presupuestos && typeof d.presupuestos === 'object' ? d.presupuestos : {},
-        msi: msi.map(m => ({ cuota: r2 ? Math.round((m.montoTotal / m.meses) * 100) / 100 : m.montoTotal / m.meses, cobrados: [], ...m, id: String(m.id ?? uid()) }))
+        msi: msi.map(m => ({ cuota: r2(m.montoTotal / m.meses), cobrados: [], ...m, id: String(m.id ?? uid()) })),
+        prestamos: prestamos.map(p => ({ contraparteTipo: 'persona', tasa: 0, fecha: '', programa: null, fechaLiquidacion: '', obligatoria: false, nota: '', ...p,
+            abonos: Array.isArray(p.abonos) ? p.abonos : [], id: String(p.id ?? uid()) }))
     };
 }
 
