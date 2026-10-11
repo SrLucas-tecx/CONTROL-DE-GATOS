@@ -3,6 +3,7 @@ import { store, buscar } from '../store.js';
 import { ORDEN_TIPO_CUENTA } from '../config.js';
 import { esc, mxn, vacio, fmtMoneda, esMXN, saldoMXN } from '../utils.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
+import { infoRendimiento, rindeAhora, proximoVencimiento } from '../services/rendimientos.js';
 import { montar, selectorTipo, configCategorias, configSerie, TIPOS_CATEGORIA, TIPOS_SERIE } from '../ui/charts.js';
 
 const PALETA = ['#8b5cf6', '#34d399', '#22d3ee', '#fbbf24', '#fb7185', '#60a5fa', '#f472b6'];
@@ -13,10 +14,18 @@ const opcionesUnidad = sel => [['dias', 'Días'], ['meses', 'Meses'], ['anios', 
 
 // Cuentas que generan rendimiento: base, ganancia anual y tasa promedio ponderada
 function datosRendimiento() {
-    const conRend = store.data.cuentas.filter(x => x.tasa > 0);
+    const conRend = store.data.cuentas.filter(rindeAhora); // un plazo vencido ya no cuenta
     const baseRend = conRend.reduce((a, x) => a + saldoMXN(x), 0);
     const anual = conRend.reduce((a, x) => a + saldoMXN(x) * x.tasa / 100, 0);
     return { baseRend, anual, tasaProm: baseRend > 0 ? (anual / baseRend) * 100 : 0 };
+}
+
+// Línea de rendimiento de cada cuenta: diario o a plazo, con su vencimiento
+function detalleRend(x) {
+    const i = infoRendimiento(x);
+    if (i.tipo === 'diario') return `<span class="badge ok">${x.tasa}% anual · diario</span> ≈ ${fmtMoneda(i.porMes, x.moneda)}/mes`;
+    const estado = i.porEmpezar ? `empieza el ${i.inicio}` : i.vencido ? 'terminó' : `vence el ${i.fin} (${i.restantes} d)`;
+    return `<span class="badge ok">${x.tasa}% · a plazo</span> ${estado}${i.vencido ? '' : ` · ≈ ${fmtMoneda(i.gananciaRestante, x.moneda)} por ganar`}`;
 }
 
 export function vistaBancos(c) {
@@ -28,11 +37,12 @@ export function vistaBancos(c) {
     grupos.forEach(g => { g.total = g.cuentas.reduce((a, x) => a + saldoMXN(x), 0); });
     const { baseRend, anual, tasaProm } = datosRendimiento();
     const hayDatos = grupos.some(g => g.total > 0);
+    const venc = proximoVencimiento();
 
     const filaCuenta = x => `
         <div class="acc-row">
             <div><strong>${esc(x.nombre)}</strong>${esMXN(x) ? '' : ` <span class="badge">${x.moneda}</span>`}<br><small class="meta">${x.tasa > 0
-                ? `<span class="badge ok">${x.tasa}% anual</span> ≈ ${fmtMoneda(x.saldo * x.tasa / 1200, x.moneda)}/mes`
+                ? detalleRend(x)
                 : '<span class="badge">Solo saldo</span>'}</small></div>
             <div class="acc-amt"><strong>${fmtMoneda(x.saldo, x.moneda)}</strong>${esMXN(x) ? '' : ` <small class="meta">≈ ${mxn(saldoMXN(x))}</small>`}
                 <button class="icon-btn" data-action="cuenta-editar" data-id="${x.id}" aria-label="Editar cuenta"><i class="fa-solid fa-pen"></i></button></div>
@@ -61,7 +71,8 @@ export function vistaBancos(c) {
                 <div class="stat"><span>Saldo que genera rendimiento</span><strong>${mxn(baseRend)}</strong></div>
                 <div class="stat"><span>Tasa promedio ponderada</span><strong>${tasaProm.toFixed(2)}%</strong></div>
                 <div class="stat"><span>Ganancia estimada al mes</span><strong class="text-success">${mxn(anual / 12)}</strong></div>
-                <div class="stat"><span>Ganancia estimada al año</span><strong class="text-success">${mxn(anual)}</strong></div></div>
+                <div class="stat"><span>Ganancia estimada al año</span><strong class="text-success">${mxn(anual)}</strong></div>
+                ${venc ? `<div class="stat"><span>Próximo vencimiento a plazo</span><strong>${esc(venc.cuenta)} · ${venc.fin}</strong></div>` : ''}</div>
         </div>
         <div class="grid-cards">${tarjetas}</div>`
         : vacio('fa-building-columns', 'Agrega tu primer banco (Nu, Mercado Pago…) y después sus cuentas.')}`;

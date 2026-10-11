@@ -43,7 +43,7 @@ export function normalizar(d) {
     const okP = prestamos.every(p => p && ['recibido', 'otorgado'].includes(p.direccion) && typeof p.contraparte === 'string' && Number.isFinite(p.monto) && Number.isFinite(p.pendiente));
     if (!(okC && okD && okM && okV && okB && okG && okR && okMsi && okP)) return null;
     return {
-        cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, ...c, id: String(c.id ?? uid()) })),
+        cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, rendTipo: 'diario', inicioRend: '', plazoMeses: 0, capitalInicio: 0, ...c, id: String(c.id ?? uid()) })),
         deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, tipo: 'tarjeta', limite: 0, ...x, id: String(x.id ?? uid()) })),
         metas:   metas.map(m => ({ meses: 12, ...m, id: String(m.id ?? uid()) })),
         movimientos: movs.map(m => ({ ...m, id: String(m.id ?? uid()) })),

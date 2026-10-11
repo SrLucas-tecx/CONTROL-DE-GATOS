@@ -3,7 +3,19 @@ import { store } from '../store.js';
 import { esc, mxn, vacio, disponible, totalApartado, fmtMoneda, esMXN, disponibleMXN } from '../utils.js';
 import { proximoPago } from './deudas.js';
 import { vistaBancos, vistaCalculadora } from './bancos.js';
+import { infoRendimiento } from '../services/rendimientos.js';
 import { destruirGraficos } from '../ui/charts.js';
+
+// Detalle del rendimiento en la tarjeta: cuánto rinde al día, o el avance y las ganancias del plazo
+function bloqueRend(c, r) {
+    const m = v => fmtMoneda(v, c.moneda);
+    if (r.tipo === 'diario') return `<span class="meta">Rinde todos los días: ≈ ${m(r.porDia)} al día · ≈ ${m(r.porMes)} al mes</span>`;
+    const estado = r.porEmpezar ? `empieza el ${r.inicio}` : r.vencido ? 'plazo terminado, ya no genera rendimiento' : `faltan ${r.restantes} días`;
+    return `<div class="progress" role="progressbar" aria-valuenow="${r.pct}" aria-valuemin="0" aria-valuemax="100"><span style="width:${r.pct}%"></span></div>
+        <span class="meta">Plazo de ${c.plazoMeses} ${c.plazoMeses === 1 ? 'mes' : 'meses'}: ${r.inicio} → ${r.fin} · ${estado}</span>
+        <span class="meta">Ganado hasta hoy ≈ ${m(r.ganadoHoy)} · En todo el plazo ≈ ${m(r.gananciaPlazo)}</span>
+        ${r.vencido ? '' : `<div class="cuota"><span>Te falta ganar</span><strong>≈ ${m(r.gananciaRestante)}</strong></div>`}`;
+}
 
 function listaCuentas(contenedor) {
     const ordenadas = [...store.data.cuentas].sort((a, b) => (ORDEN_TIPO_CUENTA[a.tipo] ?? 9) - (ORDEN_TIPO_CUENTA[b.tipo] ?? 9));
@@ -13,19 +25,21 @@ function listaCuentas(contenedor) {
         const apartado = totalApartado(c);
         const excede = apartado > c.saldo;
         const nativo = !esMXN(c);
+        const ren = c.tasa > 0 ? infoRendimiento(c) : null;
         return `
             <div class="card glass-card item-card">
                 <h4>
                     <span class="tipo-dot" style="background:${t.color}22;color:${t.color}"><i class="fa-solid ${t.icon}"></i></span>
                     ${esc(c.nombre)}
                 </h4>
-                <span><span class="badge">${t.label}</span> ${nativo ? `<span class="badge">${c.moneda}</span>` : ''} ${apartado > 0 ? `<span class="badge warn">Apartado: ${fmtMoneda(apartado, c.moneda)}</span>` : ''}</span>
+                <span><span class="badge">${t.label}</span> ${nativo ? `<span class="badge">${c.moneda}</span>` : ''} ${apartado > 0 ? `<span class="badge warn">Apartado: ${fmtMoneda(apartado, c.moneda)}</span>` : ''} ${ren ? `<span class="badge ok">${c.tasa}% anual · ${ren.tipo === 'plazo' ? 'a plazo' : 'diario'}</span>` : ''}</span>
                 <p class="amount">${fmtMoneda(disponible(c), c.moneda)}</p>
                 <span class="meta">
                     ${apartado > 0 ? `Disponible de ${fmtMoneda(c.saldo, c.moneda)} totales` : 'Disponible'}
                     ${nativo ? ` · ≈ ${mxn(disponibleMXN(c))} MXN` : ''}
                     ${excede ? ' · <span class="text-danger">lo apartado supera el saldo</span>' : ''}
                 </span>
+                ${ren ? bloqueRend(c, ren) : ''}
                 <div class="actions">
                     <button class="btn-ghost" data-action="cuenta-editar" data-id="${c.id}"><i class="fa-solid fa-pen"></i> Editar</button>
                     <button class="btn-ghost" data-action="cuenta-apartado" data-id="${c.id}"><i class="fa-solid fa-lock"></i> Apartar dinero</button>

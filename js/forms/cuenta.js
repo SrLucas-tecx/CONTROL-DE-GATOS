@@ -4,6 +4,7 @@ import { esc, mxnReal as mxn, num, r2, uid, hoyISO } from '../utils.js';
 import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
+import { infoRendimiento } from '../services/rendimientos.js';
 
 const BILLETES = [1000, 500, 200, 100, 50, 20];
 const DENOM_MONEDAS = [20, 10, 5, 2, 1, 0.5];
@@ -42,7 +43,16 @@ export function formCuenta(id, bancoInicial = '') {
             store.data.bancos.map(b => `<option value="${b.id}" ${(c ? c.banco : bancoInicial) === b.id ? 'selected' : ''}>${esc(b.nombre)}</option>`).join('')) +
         selectHTML('¿Genera rendimiento?', 'rinde',
             `<option value="no" ${c?.tasa > 0 ? '' : 'selected'}>No, solo es saldo</option><option value="si" ${c?.tasa > 0 ? 'selected' : ''}>Sí, genera rendimiento</option>`) +
-        campo('Rendimiento anual (%)', 'tasa', attrMoneda(c?.tasa || '', 'max="200"'), 'Se acredita solo cada día que abras la app.'),
+        campo('Rendimiento anual (%)', 'tasa', attrMoneda(c?.tasa || '', 'max="200"'), 'Se acredita solo cada día que abras la app.') +
+        `<div data-plazo-box class="hidden">` +
+            selectHTML('¿Cuándo genera rendimiento?', 'rendTipo',
+                `<option value="diario" ${c?.rendTipo === 'plazo' ? '' : 'selected'}>Todos los días, sin plazo</option><option value="plazo" ${c?.rendTipo === 'plazo' ? 'selected' : ''}>Durante un plazo de meses</option>`) +
+            `<div data-plazo class="hidden">` +
+                campo('Fecha en que inició', 'inicioRend', `type="date" value="${c?.inicioRend || hoyISO()}"`) +
+                campo('Plazo (meses)', 'plazoMeses', `type="number" min="1" max="120" step="1" value="${c?.plazoMeses || ''}"`) +
+                campo('Saldo con el que inició — opcional', 'capitalInicio', attrMoneda(c?.capitalInicio || ''), 'Sirve para calcular lo ganado y lo que ganarás en todo el plazo. Vacío = se usa el saldo actual.') +
+                '<p class="hint" id="plazo-prev" style="margin:0 0 12px"></p>' +
+            `</div></div>`,
         fd => {
             const nombre = fd.get('nombre').trim();
             const tipo = fd.get('tipo');
@@ -57,11 +67,18 @@ export function formCuenta(id, bancoInicial = '') {
             const rinde = fd.get('rinde') === 'si';
             const tasa = rinde ? num(fd.get('tasa')) : 0;
             if (rinde && (!tasa || tasa <= 0)) return toastError('Indica el rendimiento anual (%).');
-            const ultimoRendimiento = tasa > 0 ? (c?.tasa > 0 && c.ultimoRendimiento ? c.ultimoRendimiento : hoyISO()) : '';
+            const plazo = rinde && fd.get('rendTipo') === 'plazo';
+            const inicioRend = plazo ? fd.get('inicioRend') : '';
+            const plazoMeses = plazo ? parseInt(fd.get('plazoMeses'), 10) : 0;
+            const capitalInicio = plazo ? (num(fd.get('capitalInicio')) || 0) : 0;
+            if (plazo && (!inicioRend || !(plazoMeses >= 1 && plazoMeses <= 120))) return toastError('Indica la fecha de inicio y el plazo en meses (1 a 120).');
+            let ultimoRendimiento = tasa > 0 ? (c?.tasa > 0 && c.ultimoRendimiento ? c.ultimoRendimiento : hoyISO()) : '';
+            if (plazo && inicioRend > ultimoRendimiento) ultimoRendimiento = inicioRend; // si el plazo empieza después, no rinde antes
             const moneda = fd.get('moneda');
             const tipoCambio = moneda === 'MXN' ? 1 : num(fd.get('tipoCambio'));
             if (moneda !== 'MXN' && (!tipoCambio || tipoCambio <= 0)) return toastError('Indica un tipo de cambio válido a MXN.');
-            const datos = { nombre, tipo, saldo, banco: fd.get('banco'), tasa, ultimoRendimiento, desglose, moneda, tipoCambio };
+            const datos = { nombre, tipo, saldo, banco: fd.get('banco'), tasa, ultimoRendimiento, desglose, moneda, tipoCambio,
+                rendTipo: plazo ? 'plazo' : 'diario', inicioRend, plazoMeses, capitalInicio };
             if (c) Object.assign(c, datos); else store.data.cuentas.push({ id: uid(), ...datos });
             persistir();
             toast(c ? 'Cuenta actualizada.' : 'Cuenta agregada.');
@@ -96,6 +113,26 @@ export function formCuenta(id, bancoInicial = '') {
                 const syncMoneda = () => f.querySelector('#cambio-box').classList.toggle('hidden', moneda.value === 'MXN');
                 moneda.addEventListener('change', syncMoneda);
                 syncMoneda();
+
+                // Rendimiento: diario o por plazo, con el cálculo en vivo
+                const syncRend = () => {
+                    const e = f.elements;
+                    const si = e.rinde.value === 'si';
+                    f.querySelector('[data-plazo-box]').classList.toggle('hidden', !si);
+                    const plazo = si && e.rendTipo.value === 'plazo';
+                    f.querySelector('[data-plazo]').classList.toggle('hidden', !plazo);
+                    e.inicioRend.required = plazo; e.plazoMeses.required = plazo;
+                    const prev = f.querySelector('#plazo-prev');
+                    const meses = parseInt(e.plazoMeses.value, 10), tasa = parseFloat(e.tasa.value) || 0;
+                    if (plazo && e.inicioRend.value && meses >= 1 && tasa > 0) {
+                        const i = infoRendimiento({ tasa, saldo: parseFloat(e.saldo.value) || 0, rendTipo: 'plazo', inicioRend: e.inicioRend.value, plazoMeses: meses, capitalInicio: parseFloat(e.capitalInicio.value) || 0 });
+                        prev.textContent = `Vence el ${i.fin} · ganancia estimada hasta entonces ≈ ${mxn(i.gananciaRestante)} (saldo final ≈ ${mxn(i.saldoFinal)})`;
+                    } else prev.textContent = '';
+                };
+                ['rinde', 'rendTipo', 'inicioRend', 'plazoMeses', 'capitalInicio', 'tasa', 'saldo'].forEach(n => {
+                    f.elements[n].addEventListener('input', syncRend); f.elements[n].addEventListener('change', syncRend);
+                });
+                syncRend();
             }
         }
     );

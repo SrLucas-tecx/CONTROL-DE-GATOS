@@ -2,6 +2,7 @@
 import { TIPOS, KEY_RESPALDO, KEY_INICIO } from '../config.js';
 import { abrirModal } from '../ui/modal.js';
 import { alertasPrestamos, totalesPrestamos } from '../services/prestamos.js';
+import { alertasRendimientos } from '../services/rendimientos.js';
 import { store } from '../store.js';
 import { esc, mxn, vacio, hoyISO, diasHasta, disponibleMXN, fechaUltimoCorte } from '../utils.js';
 import { tablaMovs, ordenados } from './movimientos.js';
@@ -178,7 +179,7 @@ function avisos() {
     if (dResp === null || dResp >= 7) {
         av.push({ p: 3, cls: '', html: `<span>💾 ${dResp === null ? 'Aún no has exportado un respaldo.' : `Hace ${dResp} días que no exportas un respaldo.`}</span><button class="btn-ghost" data-action="exportar">Exportar ahora</button>` });
     }
-    av.push(...alertasPrestamos());
+    av.push(...alertasPrestamos(), ...alertasRendimientos());
     return av.sort((a, b) => a.p - b.p); // sort es estable: se conserva el orden original dentro de cada nivel
 }
 
