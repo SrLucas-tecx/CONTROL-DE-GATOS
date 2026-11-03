@@ -356,6 +356,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .filters { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .filters input { flex: 1; min-width: 200px; }
+.report-excel-button { align-self: center; padding: 6px 10px; font-size: 0.8rem; }
 .input {
     background: var(--bg-dark); border: 1px solid var(--border-solid); color: var(--text-light);
     border-radius: 10px; padding: 10px 12px; font-size: 0.95rem; font-family: inherit;
