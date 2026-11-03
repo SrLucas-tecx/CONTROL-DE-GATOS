@@ -83,18 +83,37 @@ export function vistaBancos(c) {
 }
 
 export function vistaCalculadora(c) {
-    const { baseRend, tasaProm } = datosRendimiento();
+    const { cuentas } = store.data;
+    // Capital = suma de lo seleccionado; tasa = promedio ponderado por saldo (sin rendimiento cuenta como 0 %)
+    const resumenSel = ids => {
+        const sel = cuentas.filter(x => ids.includes(x.id));
+        const base = sel.reduce((a, x) => a + saldoMXN(x), 0);
+        const anual = sel.reduce((a, x) => a + saldoMXN(x) * (rindeAhora(x) ? x.tasa : 0) / 100, 0);
+        return { base, tasa: base > 0 ? (anual / base) * 100 : 0 };
+    };
+    const ini = resumenSel(cuentas.filter(rindeAhora).map(x => x.id));
+    const capIni = ini.base > 0 ? ini.base.toFixed(2) : '10000';
+    const tasaIni = ini.base > 0 ? ini.tasa.toFixed(2) : '10';
+    const filasCuentas = cuentas.map(x => `<label class="check"><input type="checkbox" class="cuenta-sel" value="${x.id}" ${rindeAhora(x) ? 'checked' : ''}>
+        <span>${esc(x.nombre)} <small>— ${mxn(saldoMXN(x))} · ${rindeAhora(x) ? `${x.tasa}% anual` : 'sin rendimiento'}</small></span></label>`).join('');
+
     c.innerHTML = `
         <div class="module-head"><h2>Calculadora de proyección</h2></div>
         <div class="dash-grid">
             <div class="card glass-card panel"><h3>Parámetros</h3><form id="calc" class="calc-form" autocomplete="off">
-                ${campo('Capital inicial (MXN)', 'capital', attrMoneda('10000'))}
+                <p class="field-group-title">Tomar de mis cuentas</p>
+                <div class="acc-pick">${filasCuentas || '<p class="hint" style="margin:0">Aún no tienes cuentas.</p>'}</div>
+                <div class="header-actions" style="margin-bottom:8px">
+                    <button type="button" id="sel-todas" class="btn-ghost">Todas</button>
+                    <button type="button" id="sel-rend" class="btn-ghost">Solo con rendimiento</button>
+                    <button type="button" id="sel-ninguna" class="btn-ghost">Ninguna</button></div>
+                <p class="hint" id="sel-info" style="margin:0 0 14px"></p>
+                ${campo('Capital inicial (MXN)', 'capital', attrMoneda(capIni))}
                 ${campo('Aportación mensual (MXN)', 'aporte', attrMoneda('1000'))}
-                ${campo('Tasa anual (%)', 'tasa', attrMoneda('10', 'max="200"'))}
+                ${campo('Tasa anual (%)', 'tasa', attrMoneda(tasaIni, 'max="200"'))}
                 ${campo('Plazo', 'plazo', 'type="number" min="1" step="1" value="5"')}
                 ${selectHTML('Unidad del plazo', 'unidad', opcionesUnidad('anios'))}
                 ${selectHTML('Ver la gráfica por', 'ver', opcionesUnidad('anios'))}
-                <button type="button" id="usar-cuentas" class="btn-ghost" ${baseRend > 0 ? '' : 'disabled'}><i class="fa-solid fa-wand-magic-sparkles"></i> Usar mis cuentas con rendimiento</button>
             </form></div>
             <div class="card glass-card panel">
                 <div class="chart-head"><h3>Proyección</h3>${selectorTipo('tipo-proy', TIPOS_SERIE)}</div>
@@ -136,12 +155,24 @@ export function vistaCalculadora(c) {
             <div class="stat"><span>Intereses ganados</span><strong class="text-success">${mxn(final - aportado)}</strong></div>`;
     };
 
+    // Al marcar o desmarcar cuentas, capital y tasa se recalculan al instante
+    const aplicarSel = () => {
+        const ids = [...c.querySelectorAll('.cuenta-sel:checked')].map(i => i.value);
+        const info = c.querySelector('#sel-info');
+        if (!ids.length) { info.textContent = 'Sin cuentas seleccionadas: escribe capital y tasa a mano.'; return calcular(); }
+        const r = resumenSel(ids);
+        form.elements.capital.value = r.base.toFixed(2);
+        form.elements.tasa.value = r.tasa.toFixed(2);
+        info.textContent = `${ids.length} cuenta(s) · tasa promedio ponderada ${r.tasa.toFixed(2)}%`;
+        calcular();
+    };
+    const marcar = fn => { c.querySelectorAll('.cuenta-sel').forEach(i => { i.checked = fn(i.value); }); aplicarSel(); };
+    c.querySelectorAll('.cuenta-sel').forEach(i => i.addEventListener('change', aplicarSel));
+    c.querySelector('#sel-todas').addEventListener('click', () => marcar(() => true));
+    c.querySelector('#sel-ninguna').addEventListener('click', () => marcar(() => false));
+    c.querySelector('#sel-rend').addEventListener('click', () => marcar(id => rindeAhora(store.data.cuentas.find(x => x.id === id))));
+
     form.addEventListener('input', calcular);
     form.elements.unidad.addEventListener('change', () => { form.elements.ver.value = form.elements.unidad.value; calcular(); });
-    c.querySelector('#usar-cuentas').addEventListener('click', () => {
-        form.elements.capital.value = baseRend.toFixed(2);
-        form.elements.tasa.value = tasaProm.toFixed(2);
-        calcular();
-    });
-    calcular();
+    aplicarSel();
 }

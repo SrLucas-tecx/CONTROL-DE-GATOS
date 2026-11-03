@@ -5,6 +5,7 @@ import { abrirModal, cerrarModal } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 import { infoRendimiento } from '../services/rendimientos.js';
+import { parseLimites, textoLimites } from '../services/alertas.js';
 
 const BILLETES = [1000, 500, 200, 100, 50, 20];
 const DENOM_MONEDAS = [20, 10, 5, 2, 1, 0.5];
@@ -36,6 +37,7 @@ export function formCuenta(id, bancoInicial = '') {
         selectHTML('Tipo de cuenta', 'tipo', tipos) +
         conteoHTML(c) +
         campo('Saldo actual', 'saldo', attrMoneda(c ? c.saldo : '', 'required')) +
+        campo('Avisarme si el disponible baja de', 'alertas', `inputmode="decimal" value="${esc(textoLimites(c?.alertas))}" placeholder="Ej. 5000; 2000"`, 'Puedes poner varios límites, separados por punto y coma.') +
         `<div class="mon-row">` +
         selectHTML('Moneda', 'moneda', MONEDAS.map(m => `<option ${(c?.moneda || 'MXN') === m ? 'selected' : ''}>${m}</option>`).join('')) +
         `<div id="cambio-box" class="hidden">` + campo('Tipo de cambio a MXN', 'tipoCambio', attrMoneda(c?.tipoCambio || '1', 'min="0.0001"'), 'Ej. si $1 USD = $18 MXN, escribe 18.') + `</div></div>` +
@@ -78,7 +80,7 @@ export function formCuenta(id, bancoInicial = '') {
             const tipoCambio = moneda === 'MXN' ? 1 : num(fd.get('tipoCambio'));
             if (moneda !== 'MXN' && (!tipoCambio || tipoCambio <= 0)) return toastError('Indica un tipo de cambio válido a MXN.');
             const datos = { nombre, tipo, saldo, banco: fd.get('banco'), tasa, ultimoRendimiento, desglose, moneda, tipoCambio,
-                rendTipo: plazo ? 'plazo' : 'diario', inicioRend, plazoMeses, capitalInicio };
+                rendTipo: plazo ? 'plazo' : 'diario', inicioRend, plazoMeses, capitalInicio, alertas: parseLimites(fd.get('alertas')) };
             if (c) Object.assign(c, datos); else store.data.cuentas.push({ id: uid(), ...datos });
             persistir();
             toast(c ? 'Cuenta actualizada.' : 'Cuenta agregada.');

@@ -540,3 +540,6 @@ input[readonly] { opacity: 0.7; }
     #toast-container { bottom: calc(84px + env(safe-area-inset-bottom)); right: 12px; left: 12px; align-items: stretch; }
     .toast { max-width: none; }
 }
+
+/* ===== Calculadora: selector de cuentas ===== */
+.acc-pick { max-height: 200px; overflow-y: auto; margin-bottom: 10px; }

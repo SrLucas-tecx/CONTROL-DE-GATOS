@@ -5,6 +5,8 @@ import { proximoPago } from './deudas.js';
 import { vistaBancos, vistaCalculadora } from './bancos.js';
 import { infoRendimiento } from '../services/rendimientos.js';
 import { destruirGraficos } from '../ui/charts.js';
+import { nivel } from '../services/alertas.js';
+import { vistaConteo } from './conteo.js';
 
 // Detalle del rendimiento en la tarjeta: cuánto rinde al día, o el avance y las ganancias del plazo
 function bloqueRend(c, r) {
@@ -32,7 +34,7 @@ function listaCuentas(contenedor) {
                     <span class="tipo-dot" style="background:${t.color}22;color:${t.color}"><i class="fa-solid ${t.icon}"></i></span>
                     ${esc(c.nombre)}
                 </h4>
-                <span><span class="badge">${t.label}</span> ${nativo ? `<span class="badge">${c.moneda}</span>` : ''} ${apartado > 0 ? `<span class="badge warn">Apartado: ${fmtMoneda(apartado, c.moneda)}</span>` : ''} ${ren ? `<span class="badge ok">${c.tasa}% anual · ${ren.tipo === 'plazo' ? 'a plazo' : 'diario'}</span>` : ''}</span>
+                <span><span class="badge">${t.label}</span> ${nativo ? `<span class="badge">${c.moneda}</span>` : ''} ${apartado > 0 ? `<span class="badge warn">Apartado: ${fmtMoneda(apartado, c.moneda)}</span>` : ''} ${ren ? `<span class="badge ok">${c.tasa}% anual · ${ren.tipo === 'plazo' ? 'a plazo' : 'diario'}</span>` : ''} ${nivel(disponible(c), c.alertas).cruzados.length ? '<span class="badge bad">Bajo el mínimo</span>' : ''}</span>
                 <p class="amount">${fmtMoneda(disponible(c), c.moneda)}</p>
                 <span class="meta">
                     ${apartado > 0 ? `Disponible de ${fmtMoneda(c.saldo, c.moneda)} totales` : 'Disponible'}
@@ -89,10 +91,10 @@ function seccionTarjetas() {
 
 // Pestañas: la lista de cuentas, el detalle por banco con rendimiento y la calculadora (antes en "Rendimientos")
 let tabC = 'cuentas';
-const TABS_C = [['cuentas', 'Mis cuentas'], ['bancos', 'Por banco y rendimiento'], ['calculadora', 'Calculadora']];
+const TABS_C = [['cuentas', 'Mis cuentas'], ['bancos', 'Por banco y rendimiento'], ['calculadora', 'Calculadora'], ['conteo', 'Conteo quincenal']];
 export function vistaCuentas(c) {
     c.innerHTML = `<div class="tabs tabs-page" role="tablist">${TABS_C.map(([k, l]) =>
         `<button type="button" class="tab ${tabC === k ? 'active' : ''}" role="tab" data-ctab="${k}">${l}</button>`).join('')}</div><div id="sub-cuentas"></div>`;
     c.querySelectorAll('[data-ctab]').forEach(b => b.addEventListener('click', () => { tabC = b.dataset.ctab; destruirGraficos(); vistaCuentas(c); }));
-    (tabC === 'bancos' ? vistaBancos : tabC === 'calculadora' ? vistaCalculadora : listaCuentas)(c.querySelector('#sub-cuentas'));
+    (tabC === 'bancos' ? vistaBancos : tabC === 'calculadora' ? vistaCalculadora : tabC === 'conteo' ? vistaConteo : listaCuentas)(c.querySelector('#sub-cuentas'));
 }

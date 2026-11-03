@@ -20,6 +20,10 @@ import { formMovimiento, eliminarMovimiento } from './forms/movimiento.js';
 import { exportarDatos, exportarParcial, importarDatos, borrarTodo, restablecer } from './services/backup.js';
 import { generarReporteExcel, generarReportePDF } from './services/reporteMensual.js';
 import { hoyISO } from './utils.js';
+import { formAlertasPatrimonio } from './forms/alertasPatrimonio.js';
+import { formSync } from './forms/sync.js';
+import { formConteo, eliminarConteo } from './forms/conteo.js';
+import { desconectar, sincronizarAhora } from './services/sync.js';
 
 const ACCIONES = {
     'cuenta-nueva':  () => formCuenta(),
@@ -57,7 +61,13 @@ const ACCIONES = {
     'prestamo-abonar': id => formAbonoPrestamo(id),
     'mov-nuevo':     () => formMovimiento(),
     'mov-editar':    id => formMovimiento(id),
-    'mov-eliminar':  id => eliminarMovimiento(id)
+    'mov-eliminar':  id => eliminarMovimiento(id),
+    'patrimonio-alertas': () => formAlertasPatrimonio(),
+    'conteo-nuevo':  () => formConteo(),
+    'conteo-eliminar': id => eliminarConteo(id),
+    'sync-config':   () => formSync(),
+    'sync-ahora':    () => sincronizarAhora(),
+    'sync-desconectar': () => { if (confirm('¿Desconectar Google Sheets? Tus datos locales se conservan.')) { desconectar(); render(); } }
 };
 
 export function initAcciones() {

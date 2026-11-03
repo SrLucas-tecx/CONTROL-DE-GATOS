@@ -3,6 +3,8 @@ import { TIPOS, KEY_RESPALDO, KEY_INICIO } from '../config.js';
 import { abrirModal } from '../ui/modal.js';
 import { alertasPrestamos, totalesPrestamos } from '../services/prestamos.js';
 import { alertasRendimientos } from '../services/rendimientos.js';
+import { alertasSaldos, nivel } from '../services/alertas.js';
+import { alertasConteo } from '../services/conteos.js';
 import { store } from '../store.js';
 import { esc, mxn, vacio, hoyISO, diasHasta, disponibleMXN, fechaUltimoCorte } from '../utils.js';
 import { tablaMovs, ordenados } from './movimientos.js';
@@ -59,6 +61,7 @@ function resumen() {
 export function vistaDashboard(c) {
     const { cuentas, movimientos, gastos } = store.data;
     const { liquidez, totalDeudas, patrimonio, porCobrar, salud } = resumen();
+    const bajoLimite = nivel(patrimonio, store.data.alertasPatrimonio).cruzados.length > 0;
     const totales = Object.entries(TIPOS).map(([key, t]) => ({
         key, ...t, total: cuentas.filter(x => x.tipo === key).reduce((a, x) => a + disponibleMXN(x), 0)
     }));
@@ -89,7 +92,7 @@ export function vistaDashboard(c) {
     const graficas = !prefs.grafica ? '' : dos ? `<div class="dash-grid">${panelLiq}${panelBal}</div>` : (tabGrafico === 'liquidez' ? panelLiq : panelBal);
 
     c.innerHTML = `
-        <div class="inicio-bar"><button type="button" class="link link-btn" data-personalizar><i class="fa-solid fa-sliders"></i> Personalizar</button></div>
+        <div class="inicio-bar" style="gap:16px"><button type="button" class="link link-btn" data-action="patrimonio-alertas"><i class="fa-solid fa-bell"></i> Límites</button><button type="button" class="link link-btn" data-personalizar><i class="fa-solid fa-sliders"></i> Personalizar</button></div>
         <section class="card glass-card hero">
             <div class="hero-main">
                 <span class="hero-label">Patrimonio neto</span>
@@ -98,6 +101,7 @@ export function vistaDashboard(c) {
                     <span>Liquidez <strong class="text-success">${mxn(liquidez)}</strong></span>
                     <span>Deudas <strong class="text-danger">${mxn(totalDeudas)}</strong></span>
                     ${porCobrar > 0 ? `<span>Por cobrar <strong class="text-success">${mxn(porCobrar)}</strong></span>` : ''}
+                    ${bajoLimite ? '<span class="badge bad">Bajo tu límite</span>' : ''}
                 </div>
             </div>
             ${prefs.salud ? `<div class="hero-salud">
@@ -179,7 +183,7 @@ function avisos() {
     if (dResp === null || dResp >= 7) {
         av.push({ p: 3, cls: '', html: `<span>💾 ${dResp === null ? 'Aún no has exportado un respaldo.' : `Hace ${dResp} días que no exportas un respaldo.`}</span><button class="btn-ghost" data-action="exportar">Exportar ahora</button>` });
     }
-    av.push(...alertasPrestamos(), ...alertasRendimientos());
+    av.push(...alertasPrestamos(), ...alertasRendimientos(), ...alertasSaldos(resumen().patrimonio), ...alertasConteo());
     return av.sort((a, b) => a.p - b.p); // sort es estable: se conserva el orden original dentro de cada nivel
 }
 

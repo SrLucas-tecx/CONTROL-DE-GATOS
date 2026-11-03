@@ -1,0 +1,21 @@
+FinanzasPro — proyecto completo
+
+Abrir: sirve la carpeta con un servidor local (los módulos ES no funcionan con doble clic en file://),
+por ejemplo:  python3 -m http.server 8000   y entra a http://localhost:8000
+
+Estructura
+  index.html, styles.css, manifest.json, sw.js
+  js/        main, config, router, utils, store, actions
+  js/views/      pantallas (dashboard, cuentas, bancos, conteo, ...)
+  js/services/   lógica (rendimientos, recurrentes, msi, prestamos, alertas, conteos, sync, backup, reportes)
+  js/forms/      formularios (cuenta, conteo, sync, alertasPatrimonio, ...)
+  js/ui/         modal, toast, charts, fields, rowmenu
+  apps-script/Code.gs   backend para Google Sheets (pegar en Extensiones → Apps Script)
+
+Novedades de esta versión
+  · Calculadora: elige qué cuentas usar (capital y tasa promedio se recalculan al marcarlas)
+  · Límites de saldo mínimo (varios) por cuenta y para el patrimonio neto
+  · Sincronización con Google Sheets (cambios visibles en 2–5 s)
+  · Conteo quincenal: Cuentas → «Conteo quincenal»
+
+Nota: manifest.json y index.html piden icon-192.png e icon-512.png; agrégalos a la raíz si quieres la app instalable con ícono.

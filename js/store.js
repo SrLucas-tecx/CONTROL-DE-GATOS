@@ -19,7 +19,9 @@ export const datosIniciales = () => ({
     recurrentes: [],
     presupuestos: {},
     msi: [],
-    prestamos: []
+    prestamos: [],
+    alertasPatrimonio: [],
+    conteos: []
 });
 
 // Valida y normaliza datos (localStorage e importación). Devuelve null si son inválidos.
@@ -43,7 +45,7 @@ export function normalizar(d) {
     const okP = prestamos.every(p => p && ['recibido', 'otorgado'].includes(p.direccion) && typeof p.contraparte === 'string' && Number.isFinite(p.monto) && Number.isFinite(p.pendiente));
     if (!(okC && okD && okM && okV && okB && okG && okR && okMsi && okP)) return null;
     return {
-        cuentas: d.cuentas.map(c => ({ tasa: 0, banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, rendTipo: 'diario', inicioRend: '', plazoMeses: 0, capitalInicio: 0, ...c, id: String(c.id ?? uid()) })),
+        cuentas: d.cuentas.map(c => ({ tasa: 0, alertas: [], banco: '', apartados: [], moneda: 'MXN', tipoCambio: 1, rendTipo: 'diario', inicioRend: '', plazoMeses: 0, capitalInicio: 0, ...c, id: String(c.id ?? uid()) })),
         deudas:  d.deudas.map(x => ({ tasa: 0, pagoMinimo: 0, tipo: 'tarjeta', limite: 0, ...x, id: String(x.id ?? uid()) })),
         metas:   metas.map(m => ({ meses: 12, ...m, id: String(m.id ?? uid()) })),
         movimientos: movs.map(m => ({ ...m, id: String(m.id ?? uid()) })),
@@ -53,7 +55,9 @@ export function normalizar(d) {
         presupuestos: d.presupuestos && typeof d.presupuestos === 'object' ? d.presupuestos : {},
         msi: msi.map(m => ({ cuota: r2(m.montoTotal / m.meses), cobrados: [], ...m, id: String(m.id ?? uid()) })),
         prestamos: prestamos.map(p => ({ contraparteTipo: 'persona', tasa: 0, fecha: '', programa: null, fechaLiquidacion: '', obligatoria: false, nota: '', ...p,
-            abonos: Array.isArray(p.abonos) ? p.abonos : [], id: String(p.id ?? uid()) }))
+            abonos: Array.isArray(p.abonos) ? p.abonos : [], id: String(p.id ?? uid()) })),
+        alertasPatrimonio: Array.isArray(d.alertasPatrimonio) ? d.alertasPatrimonio.filter(n => Number.isFinite(n) && n > 0) : [],
+        conteos: (Array.isArray(d.conteos) ? d.conteos : []).filter(x => x && typeof x.fecha === 'string' && Array.isArray(x.items)).map(x => ({ ...x, id: String(x.id ?? uid()) }))
     };
 }
 

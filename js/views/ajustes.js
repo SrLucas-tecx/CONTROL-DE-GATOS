@@ -1,4 +1,5 @@
 import { hoyISO } from '../utils.js';
+import { syncActivo } from '../services/sync.js';
 
 export function vistaAjustes(c) {
     c.innerHTML = `
@@ -19,6 +20,12 @@ export function vistaAjustes(c) {
             <div class="card glass-card"><h4>Importar / traspasar datos</h4>
                 <p>Carga un .json (completo o parcial), elige qué secciones traer y si reemplazan lo actual o se combinan.</p>
                 <button class="btn-primary" data-action="importar"><i class="fa-solid fa-upload"></i> Cargar Archivo JSON</button></div>
+            <div class="card glass-card"><h4>Google Sheets (nube)</h4>
+                <p>${syncActivo() ? 'Conectado. Tus cambios se suben en ~1 s y los de otros dispositivos aparecen en 2–5 s.' : 'Guarda tus datos en una hoja de cálculo y úsalos en varios dispositivos.'}</p>
+                ${syncActivo()
+                    ? `<button class="btn-success" data-action="sync-ahora"><i class="fa-solid fa-rotate"></i> Sincronizar ahora</button>
+                       <button class="btn-danger" data-action="sync-desconectar">Desconectar</button>`
+                    : `<button class="btn-primary" data-action="sync-config"><i class="fa-solid fa-cloud"></i> Conectar Google Sheets</button>`}</div>
         </div>
         <div class="card glass-card danger-zone"><h4><i class="fa-solid fa-triangle-exclamation"></i> Zona de peligro</h4>
             <p class="hint" style="margin:8px 0 14px">Reinicia con datos de demostración o borra todo. Exporta un respaldo antes.</p>
