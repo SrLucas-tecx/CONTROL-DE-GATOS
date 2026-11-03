@@ -16,6 +16,7 @@ Novedades de esta versión
   · Calculadora: elige qué cuentas usar (capital y tasa promedio se recalculan al marcarlas)
   · Límites de saldo mínimo (varios) por cuenta y para el patrimonio neto
   · Sincronización con Google Sheets (cambios visibles en 2–5 s)
+  · Rendimiento bancario automático: con Google Sheets conectado, pega y guarda el backend actualizado en Apps Script, ejecuta configurarRendimientoDiario una vez y autoriza el permiso. Se programará una ejecución diaria alrededor de la medianoche según la zona horaria de la hoja (Google puede ejecutarla dentro de esa hora); sin conexión, la app se pone al corriente al abrirla.
   · Conteo quincenal: Cuentas → «Conteo quincenal»
 
 Nota: manifest.json y index.html piden icon-192.png e icon-512.png; agrégalos a la raíz si quieres la app instalable con ícono.

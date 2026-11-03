@@ -334,7 +334,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     .sidebar nav li { margin: 0; flex-shrink: 0; }
     .sidebar nav a { padding: 8px 12px; font-size: 0.9rem; white-space: nowrap; }
     .sidebar-foot { display: none; }
-    .main-content { padding: 16px; }
+    .main-content { width: 100%; padding: 16px; }
     header h1 { font-size: 1.3rem; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -505,6 +505,20 @@ input[readonly] { opacity: 0.7; }
     .sidebar nav { display: none; }
     .logo { padding: 12px 16px; }
     .main-content { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+    .card, .panel { min-width: 0; padding: 16px; }
+    .grid-cards, .settings-grid { grid-template-columns: minmax(0, 1fr); }
+    .module-head { align-items: flex-start; }
+    .module-head .header-actions { width: 100%; }
+    .module-head .header-actions > button { flex: 1 1 auto; }
+    .filters { align-items: stretch; }
+    .filters .mini-label { flex: 1 1 100%; }
+    .filters > button { flex: 1 1 180px; }
+    .stat { align-items: flex-start; gap: 12px; }
+    .stat strong { text-align: right; overflow-wrap: anywhere; }
+    .acc-row { align-items: flex-start; flex-direction: column; }
+    .acc-amt { width: 100%; justify-content: space-between; white-space: normal; }
+    .debt-nums { width: 100%; justify-content: space-between; gap: 12px; text-align: left; }
+    .debt-nums > div { min-width: 0; }
 
     .bottom-nav {
         display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
@@ -540,6 +554,18 @@ input[readonly] { opacity: 0.7; }
 
     #toast-container { bottom: calc(84px + env(safe-area-inset-bottom)); right: 12px; left: 12px; align-items: stretch; }
     .toast { max-width: none; }
+}
+
+@media (max-width: 420px) {
+    .main-content { padding-inline: 12px; }
+    .card, .panel { padding: 14px; }
+    .summary-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .summary-cards .card p { font-size: clamp(1.15rem, 6vw, 1.5rem); overflow-wrap: anywhere; }
+    .header-actions { gap: 8px; }
+    .module-head .header-actions > button { flex-basis: 100%; }
+    .hero { padding: 16px; }
+    .hero-amount { font-size: clamp(1.7rem, 9vw, 2.1rem); overflow-wrap: anywhere; }
+    .den-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ===== Calculadora: selector de cuentas ===== */
