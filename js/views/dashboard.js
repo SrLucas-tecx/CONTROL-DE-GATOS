@@ -24,17 +24,34 @@ const OPCIONES = {
     movimientos: ['Últimos movimientos', 'Los 3 más recientes']
 };
 const PREF_DEF = { salud: true, tarjetas: false, avisos: true, grafica: true, dosGraficas: false, movimientos: true };
-const cargarPrefs = () => { try { return { ...PREF_DEF, ...JSON.parse(localStorage.getItem(KEY_INICIO) || '{}') }; } catch (e) { return { ...PREF_DEF }; } };
+const cargarPrefs = () => {
+    try {
+        const guardadas = JSON.parse(localStorage.getItem(KEY_INICIO) || '{}') || {};
+        return {
+            ...PREF_DEF,
+            ...guardadas,
+            excluirCuentas: Array.isArray(guardadas.excluirCuentas) ? guardadas.excluirCuentas.map(String) : []
+        };
+    } catch (e) { return { ...PREF_DEF, excluirCuentas: [] }; }
+};
 let prefs = cargarPrefs();
 let contenedor = null;
 
 function personalizar() {
+    const seleccionCuentas = store.data.cuentas.length
+        ? store.data.cuentas.map(c =>
+            `<label class="check"><input type="checkbox" name="cuentasInicio" value="${esc(c.id)}" ${prefs.excluirCuentas.includes(c.id) ? '' : 'checked'}> <span>${esc(c.nombre)}</span></label>`).join('')
+        : '<p class="modal-note">Agrega una cuenta para poder elegirla aquí.</p>';
     abrirModal('Personalizar Inicio',
         '<p class="modal-note">Elige qué quieres ver al abrir la app. El patrimonio neto siempre se muestra.</p>' +
         Object.entries(OPCIONES).map(([k, [t, d]]) =>
-            `<label class="check"><input type="checkbox" name="${k}" ${prefs[k] ? 'checked' : ''}> <span>${t} <small>— ${d}</small></span></label>`).join(''),
+            `<label class="check"><input type="checkbox" name="${k}" ${prefs[k] ? 'checked' : ''}> <span>${t} <small>— ${d}</small></span></label>`).join('') +
+        '<p class="modal-note"><strong>Cuentas para el total de liquidez</strong><br>El total mostrado en Inicio suma solo las cuentas marcadas. El patrimonio, la salud y las gráficas siguen usando todas.</p>' +
+        seleccionCuentas,
         fd => {
             prefs = Object.fromEntries(Object.keys(OPCIONES).map(k => [k, !!fd.get(k)]));
+            const seleccionadas = new Set(fd.getAll('cuentasInicio'));
+            prefs.excluirCuentas = store.data.cuentas.filter(c => !seleccionadas.has(c.id)).map(c => c.id);
             try { localStorage.setItem(KEY_INICIO, JSON.stringify(prefs)); } catch (e) { /* sin almacenamiento */ }
             destruirGraficos();
             vistaDashboard(contenedor);
@@ -61,6 +78,9 @@ function resumen() {
 export function vistaDashboard(c) {
     const { cuentas, movimientos, gastos } = store.data;
     const { liquidez, totalDeudas, patrimonio, porCobrar, salud } = resumen();
+    const liquidezSeleccionada = cuentas
+        .filter(cuenta => !prefs.excluirCuentas.includes(cuenta.id))
+        .reduce((total, cuenta) => total + disponibleMXN(cuenta), 0);
     const bajoLimite = nivel(patrimonio, store.data.alertasPatrimonio).cruzados.length > 0;
     const totales = Object.entries(TIPOS).map(([key, t]) => ({
         key, ...t, total: cuentas.filter(x => x.tipo === key).reduce((a, x) => a + disponibleMXN(x), 0)
@@ -74,7 +94,7 @@ export function vistaDashboard(c) {
     const tarjetas = `
         <section class="summary-cards">
             <div class="card glass-card"><h3>Patrimonio Neto</h3><p class="${patrimonio >= 0 ? 'text-success' : 'text-danger'}">${mxn(patrimonio)}</p><small>Liquidez + por cobrar − deudas</small></div>
-            <div class="card glass-card"><h3>Bolsa General (Líquido)</h3><p class="text-success">${mxn(liquidez)}</p><small>Efectivo + débito + rendimiento</small></div>
+            <div class="card glass-card"><h3>Bolsa General (Líquido)</h3><p class="text-success">${mxn(liquidezSeleccionada)}</p><small>Total de las cuentas elegidas</small></div>
             <div class="card glass-card"><h3>Deudas Pendientes</h3><p class="text-danger">${mxn(totalDeudas)}</p><small>Incluye préstamos recibidos</small></div>
             <div class="card glass-card"><h3>Salud Financiera</h3><p><span class="badge ${salud.cls}">${salud.txt}</span></p><small>${salud.desc}</small></div>
         </section>`;
@@ -98,7 +118,7 @@ export function vistaDashboard(c) {
                 <span class="hero-label">Patrimonio neto</span>
                 <p class="hero-amount ${patrimonio >= 0 ? 'text-success' : 'text-danger'}">${mxn(patrimonio)}</p>
                 <div class="hero-sub">
-                    <span>Liquidez <strong class="text-success">${mxn(liquidez)}</strong></span>
+                    <span>Liquidez elegida <strong class="text-success">${mxn(liquidezSeleccionada)}</strong></span>
                     <span>Deudas <strong class="text-danger">${mxn(totalDeudas)}</strong></span>
                     ${porCobrar > 0 ? `<span>Por cobrar <strong class="text-success">${mxn(porCobrar)}</strong></span>` : ''}
                     ${bajoLimite ? '<span class="badge bad">Bajo tu límite</span>' : ''}
