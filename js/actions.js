@@ -24,6 +24,7 @@ import { formAlertasPatrimonio } from './forms/alertasPatrimonio.js';
 import { formSync } from './forms/sync.js';
 import { formConteo, eliminarConteo } from './forms/conteo.js';
 import { desconectar, sincronizarAhora } from './services/sync.js';
+import { confirmar } from './ui/modal.js';
 
 const ACCIONES = {
     'cuenta-nueva':  () => formCuenta(),
@@ -52,7 +53,7 @@ const ACCIONES = {
     'gasto-eliminar': id => eliminarGasto(id),
     'gastos-exportar': () => exportarGastosExcel(),
     'msi-nuevo':     () => formMSI(),
-    'msi-cancelar':  id => { if (cancelarMSI(id)) { persistir(); } },
+    'msi-cancelar':  async id => { if (await cancelarMSI(id)) { persistir(); } },
     'rec-nuevo':     () => formRecurrente(),
     'rec-editar':    id => formRecurrente(id),
     'prestamo-nuevo-recibido':  () => formPrestamo(undefined, 'recibido'),
@@ -67,7 +68,11 @@ const ACCIONES = {
     'conteo-eliminar': id => eliminarConteo(id),
     'sync-config':   () => formSync(),
     'sync-ahora':    () => sincronizarAhora(),
-    'sync-desconectar': () => { if (confirm('¿Desconectar Google Sheets? Tus datos locales se conservan.')) { desconectar(); render(); } }
+    'sync-desconectar': async () => {
+        if (await confirmar('Tus datos locales se conservan, pero esta app dejará de sincronizarse con Google Sheets.', {
+            titulo: 'Desconectar Google Sheets', aceptarTexto: 'Desconectar'
+        })) { desconectar(); render(); }
+    }
 };
 
 export function initAcciones() {
@@ -90,31 +95,55 @@ export function initAcciones() {
     pintarOjo();
 
     // Menús ⋯ (encabezado y filas de tablas) y selector de tipo de gráfica
+    let ultimaAperturaMenu = 0;
+    let menuFilaAbierto = null;
     const cerrarMenus = () => document.querySelectorAll('.menu-wrap .menu:not(.hidden)').forEach(m => {
         m.classList.add('hidden');
         m.parentElement.querySelector('[aria-haspopup]')?.setAttribute('aria-expanded', 'false');
     });
+    const cerrarMenuFila = () => {
+        if (!menuFilaAbierto) return;
+        const { menu, boton, contenedor } = menuFilaAbierto;
+        menu.classList.add('hidden');
+        menu.classList.remove('row-menu-floating');
+        menu.removeAttribute('style');
+        contenedor.append(menu);
+        boton.setAttribute('aria-expanded', 'false');
+        menuFilaAbierto = null;
+    };
+    const cerrarTodosMenus = () => { cerrarMenus(); cerrarMenuFila(); };
     document.addEventListener('click', e => {
         const gear = e.target.closest('[data-chartgear]');
         if (gear) { gear.nextElementSibling.classList.toggle('hidden'); return; }
         const t = e.target.closest('[data-rowmenu], #btn-menu');
-        if (!t) return cerrarMenus();
-        const menu = t.parentElement.querySelector('.menu');
+        if (!t) return cerrarTodosMenus();
+        const menu = menuFilaAbierto?.boton === t ? menuFilaAbierto.menu : t.parentElement.querySelector('.menu');
         const abrir = menu.classList.contains('hidden');
-        cerrarMenus();
+        cerrarTodosMenus();
         if (!abrir) return;
         menu.classList.remove('hidden');
         t.setAttribute('aria-expanded', 'true');
+        ultimaAperturaMenu = performance.now();
         if (t.hasAttribute('data-rowmenu')) { // fijo en pantalla para que la tabla no lo recorte
-            const r = t.getBoundingClientRect();
+            const contenedor = t.parentElement;
+            menu.classList.add('row-menu-floating');
             menu.style.position = 'fixed';
-            menu.style.left = `${Math.max(8, r.right - menu.offsetWidth)}px`;
-            menu.style.top = `${r.bottom + menu.offsetHeight + 8 > innerHeight ? r.top - menu.offsetHeight - 4 : r.bottom + 4}px`;
+            menu.style.right = 'auto';
+            const r = t.getBoundingClientRect();
+            const maxX = Math.max(8, innerWidth - menu.offsetWidth - 8);
+            const x = Math.max(8, Math.min(r.right - menu.offsetWidth, maxX));
+            const y = r.bottom + menu.offsetHeight + 8 > innerHeight ? r.top - menu.offsetHeight - 4 : r.bottom + 4;
+            menu.style.left = `${x}px`;
+            menu.style.top = `${Math.max(8, Math.min(y, innerHeight - menu.offsetHeight - 8))}px`;
+            document.body.append(menu);
+            menuFilaAbierto = { menu, boton: t, contenedor };
         }
     });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarMenus(); });
-    window.addEventListener('scroll', cerrarMenus, true);
-    window.addEventListener('resize', cerrarMenus);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarTodosMenus(); });
+    window.addEventListener('scroll', () => {
+        if (performance.now() - ultimaAperturaMenu > 250) cerrarTodosMenus();
+    }, true);
+    window.addEventListener('resize', cerrarTodosMenus);
     document.addEventListener('change', e => { if (e.target.matches('.chart-type')) e.target.classList.add('hidden'); });
 
     // Barra inferior (móvil): el botón "Más" abre una hoja con las secciones restantes

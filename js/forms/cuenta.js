@@ -1,7 +1,7 @@
 import { TIPOS, MONEDAS } from '../config.js';
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxnReal as mxn, num, r2, uid, hoyISO } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 import { infoRendimiento } from '../services/rendimientos.js';
@@ -86,8 +86,8 @@ export function formCuenta(id, bancoInicial = '') {
             toast(c ? 'Cuenta actualizada.' : 'Cuenta agregada.');
         },
         {
-            onDelete: c ? () => {
-                if (!confirm(`¿Eliminar la cuenta «${c.nombre}»?`)) return;
+            onDelete: c ? async () => {
+                if (!await confirmar(`¿Eliminar la cuenta «${c.nombre}»?`, { titulo: 'Eliminar cuenta', aceptarTexto: 'Eliminar' })) return;
                 store.data.cuentas = store.data.cuentas.filter(x => x.id !== c.id);
                 cerrarModal(); persistir(); toast('Cuenta eliminada.');
             } : null,

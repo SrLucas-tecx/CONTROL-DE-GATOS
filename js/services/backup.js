@@ -3,7 +3,7 @@ import { store, normalizar, reemplazarDatos, datosIniciales } from '../store.js'
 import { render } from '../router.js';
 import { KEY_RESPALDO } from '../config.js';
 import { hoyISO, uid } from '../utils.js';
-import { abrirModal } from '../ui/modal.js';
+import { abrirModal, confirmar } from '../ui/modal.js';
 import { selectHTML } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
@@ -65,11 +65,18 @@ export function importarDatos(archivo) {
             '<p class="modal-note">El archivo contiene estas secciones. Elige cuáles traer.</p>' + casillas(presentes, json) +
             selectHTML('¿Cómo aplicarlas?', 'modo',
                 '<option value="reemplazar">Reemplazar lo que tengo en esas secciones</option><option value="combinar">Combinar (agrega y actualiza por ID)</option>'),
-            fd => {
+            async fd => {
                 const sel = Object.keys(presentes).filter(k => fd.get(`s_${k}`));
                 if (!sel.length) return toastError('Elige al menos una sección.');
+                const combinar = fd.get('modo') === 'combinar';
+                const detalle = combinar
+                    ? 'La combinación puede actualizar registros que ya existen con el mismo ID.'
+                    : 'Se reemplazarán los datos actuales de las secciones elegidas.';
+                if (!await confirmar(`${detalle} Se importarán: ${sel.map(k => SECCIONES[k]).join(', ')}.`, {
+                    titulo: 'Confirmar importación', aceptarTexto: 'Importar'
+                })) return false;
                 const candidato = { ...store.data };
-                sel.forEach(k => { candidato[k] = fd.get('modo') === 'combinar' ? fusionar(k, store.data[k], json[k]) : json[k]; });
+                sel.forEach(k => { candidato[k] = combinar ? fusionar(k, store.data[k], json[k]) : json[k]; });
                 const datos = normalizar(candidato);
                 if (!datos) return toastError('Los datos del archivo no tienen un formato válido.');
                 reemplazarDatos(datos);
@@ -82,14 +89,18 @@ export function importarDatos(archivo) {
     lector.readAsText(archivo);
 }
 
-export function borrarTodo() {
-    if (!confirm('Se borrarán todas tus cuentas, deudas y metas. ¿Continuar?')) return;
+export async function borrarTodo() {
+    if (!await confirmar('Se borrarán todos los datos financieros de este dispositivo. Esta acción no se puede deshacer.', {
+        titulo: 'Borrar todos los datos', aceptarTexto: 'Borrar todo'
+    })) return;
     reemplazarDatos({ cuentas: [], deudas: [], metas: [], movimientos: [], bancos: [], gastos: [], recurrentes: [], presupuestos: {}, msi: [], prestamos: [], alertasPatrimonio: [], conteos: [] });
     toast('Datos borrados.');
 }
 
-export function restablecer() {
-    if (!confirm('Se restablecerán los datos de demostración y se perderán los actuales. ¿Continuar?')) return;
+export async function restablecer() {
+    if (!await confirmar('Se reemplazarán tus datos actuales por los datos de demostración. Esta acción no se puede deshacer.', {
+        titulo: 'Restablecer datos', aceptarTexto: 'Restablecer'
+    })) return;
     reemplazarDatos(datosIniciales());
     toast('Datos restablecidos.');
 }

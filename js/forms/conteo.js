@@ -1,7 +1,7 @@
 // Formulario del conteo quincenal: escribes el saldo real de cada app y se compara contra la app.
 import { store, buscar, persistir } from '../store.js';
 import { esc, num, r2, uid, hoyISO } from '../utils.js';
-import { abrirModal } from '../ui/modal.js';
+import { abrirModal, confirmar } from '../ui/modal.js';
 import { toast, toastError } from '../ui/toast.js';
 import { quincenaDe, cuadra, TOLERANCIA } from '../services/conteos.js';
 
@@ -74,9 +74,9 @@ export function formConteo() {
     );
 }
 
-export function eliminarConteo(id) {
+export async function eliminarConteo(id) {
     if (!(store.data.conteos || []).some(c => c.id === id)) return;
-    if (!confirm('¿Eliminar este conteo? Si ajustaste saldos con él, esos ajustes se conservan.')) return;
+    if (!await confirmar('¿Eliminar este conteo? Si ajustaste saldos con él, esos ajustes se conservan.', { titulo: 'Eliminar conteo', aceptarTexto: 'Eliminar' })) return;
     store.data.conteos = store.data.conteos.filter(c => c.id !== id);
     persistir();
     toast('Conteo eliminado.');

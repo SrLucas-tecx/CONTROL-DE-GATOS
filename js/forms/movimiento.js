@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { num, r2, uid, hoyISO, disponible } from '../utils.js';
-import { abrirModal } from '../ui/modal.js';
+import { abrirModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
@@ -87,16 +87,16 @@ export function formMovimiento(id) {
     );
 }
 
-export function eliminarMovimiento(id) {
+export async function eliminarMovimiento(id) {
     const m = buscar('movimientos', id);
     if (!m) return;
     if (m.informativo) { // abonos y aportes: solo se quita el registro, no toca saldos
-        if (!confirm('Este registro es informativo: quitarlo no cambia saldos ni deudas. ¿Quitarlo?')) return;
+        if (!await confirmar('Este registro es informativo: quitarlo no cambia saldos ni deudas. ¿Quitarlo?', { titulo: 'Quitar registro', aceptarTexto: 'Quitar' })) return;
         store.data.movimientos = store.data.movimientos.filter(x => x.id !== id);
         persistir();
         return toast('Registro eliminado.');
     }
-    if (!confirm('¿Eliminar este movimiento? Se revertirá su efecto en las cuentas.')) return;
+    if (!await confirmar('¿Eliminar este movimiento? Se revertirá su efecto en las cuentas.', { titulo: 'Eliminar movimiento', aceptarTexto: 'Eliminar' })) return;
     revertir(m);
     store.data.movimientos = store.data.movimientos.filter(x => x.id !== id);
     persistir();

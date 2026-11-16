@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
-import { abrirModal } from '../ui/modal.js';
+import { abrirModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 import { aplicarMSI } from '../services/msi.js';
@@ -98,9 +98,9 @@ export function formGasto(id) {
     );
 }
 
-export function eliminarGasto(id) {
+export async function eliminarGasto(id) {
     const g = buscar('gastos', id);
-    if (!g || !confirm('¿Eliminar este gasto? Se devolverá el monto a la cuenta o tarjeta.')) return;
+    if (!g || !await confirmar('¿Eliminar este gasto? Se devolverá el monto a la cuenta o tarjeta.', { titulo: 'Eliminar gasto', aceptarTexto: 'Eliminar' })) return;
     revertir(g);
     store.data.gastos = store.data.gastos.filter(x => x.id !== id);
     persistir();

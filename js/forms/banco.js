@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { esc, uid } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
@@ -18,8 +18,8 @@ export function formBanco(id) {
             toast(b ? 'Banco actualizado.' : 'Banco agregado.');
         },
         {
-            onDelete: b ? () => {
-                if (!confirm(`¿Eliminar «${b.nombre}»? Sus cuentas se conservarán como «Sin banco».`)) return;
+            onDelete: b ? async () => {
+                if (!await confirmar(`¿Eliminar «${b.nombre}»? Sus cuentas se conservarán como «Sin banco».`, { titulo: 'Eliminar banco', aceptarTexto: 'Eliminar' })) return;
                 store.data.cuentas.forEach(c => { if (c.banco === b.id) c.banco = ''; });
                 store.data.bancos = store.data.bancos.filter(x => x.id !== b.id);
                 cerrarModal(); persistir(); toast('Banco eliminado.');

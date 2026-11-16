@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
@@ -37,8 +37,8 @@ export function formDeuda(id, tipoInicial = 'tarjeta') {
             toast(d ? 'Deuda actualizada.' : 'Deuda registrada.');
         },
         {
-            onDelete: d ? () => {
-                if (!confirm(`¿Eliminar la deuda «${d.nombre}»?`)) return;
+            onDelete: d ? async () => {
+                if (!await confirmar(`¿Eliminar la deuda «${d.nombre}»?`, { titulo: 'Eliminar deuda', aceptarTexto: 'Eliminar' })) return;
                 store.data.deudas = store.data.deudas.filter(x => x.id !== d.id);
                 cerrarModal(); persistir(); toast('Deuda eliminada.');
             } : null

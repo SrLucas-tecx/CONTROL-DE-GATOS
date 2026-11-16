@@ -1,7 +1,7 @@
 // Formularios de préstamos: registrar / editar, y abonar o registrar un cobro.
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 import { ETIQ_DIRECCION, ETIQ_CONTRAPARTE, FREC_PRESTAMO, calendario } from '../services/prestamos.js';
@@ -75,8 +75,8 @@ export function formPrestamo(id, direccionInicial = 'recibido') {
         },
         {
             submitText: p ? 'Guardar cambios' : 'Registrar',
-            onDelete: p ? () => {
-                if (!confirm(`¿Eliminar el préstamo con «${p.contraparte}»? Los movimientos ya registrados se conservan.`)) return;
+            onDelete: p ? async () => {
+                if (!await confirmar(`¿Eliminar el préstamo con «${p.contraparte}»? Los movimientos ya registrados se conservan.`, { titulo: 'Eliminar préstamo', aceptarTexto: 'Eliminar' })) return;
                 store.data.prestamos = store.data.prestamos.filter(x => x.id !== p.id);
                 cerrarModal(); persistir(); toast('Préstamo eliminado.');
             } : null,

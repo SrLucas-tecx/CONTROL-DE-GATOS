@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, uid, hoyISO } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 import { aplicarRecurrentes, proximas, fechaConDia, aISO, FRECUENCIAS } from '../services/recurrentes.js';
@@ -50,8 +50,8 @@ export function formRecurrente(id) {
             toast(r ? 'Actualizado.' : 'Programado.');
         },
         {
-            onDelete: r ? () => {
-                if (!confirm(`¿Eliminar «${r.nombre}»? Los cobros ya registrados se conservan.`)) return;
+            onDelete: r ? async () => {
+                if (!await confirmar(`¿Eliminar «${r.nombre}»? Los cobros ya registrados se conservan.`, { titulo: 'Eliminar programación', aceptarTexto: 'Eliminar' })) return;
                 store.data.recurrentes = store.data.recurrentes.filter(x => x.id !== r.id);
                 cerrarModal(); persistir(); toast('Eliminado.');
             } : null,

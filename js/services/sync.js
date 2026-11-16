@@ -4,6 +4,7 @@
 //  → un cambio hecho en otro dispositivo aparece en 2–5 s.
 import { store, normalizar, reemplazarDatos, alCambiar } from '../store.js';
 import { toastError } from '../ui/toast.js';
+import { confirmar } from '../ui/modal.js';
 
 const KEY_SYNC = 'finanzaspro_sync';
 const KEY_VER = 'finanzaspro_sync_version';
@@ -60,7 +61,13 @@ async function subir(forzar = false) {
     try {
         const r = await llamar({ accion: 'escribir', base: version, forzar, data: store.data });
         if (r.conflicto) {
-            const usarNube = confirm('Se hicieron cambios en otro dispositivo.\n\nAceptar = cargar los de la nube (se pierden los cambios de aquí).\nCancelar = sobrescribir la nube con los de este dispositivo.');
+            const usarNube = await confirmar('Hay cambios distintos en este dispositivo y en Google Sheets. Elige cuál conservar.', {
+                titulo: 'Resolver conflicto de sincronización',
+                aceptarTexto: 'Usar datos de la nube',
+                cancelarTexto: 'Sobrescribir la nube',
+                cancelarPeligro: true,
+                permitirCerrar: false
+            });
             if (usarNube) aplicarRemoto(r.version, r.data); else reforzar = true;
         } else { version = r.version; ls.set(KEY_VER, String(version)); ls.set(KEY_PEND, '0'); }
         if (!reforzar) estado('Sincronizado');
@@ -106,8 +113,17 @@ export async function iniciarSync() {
         else if (ls.get(KEY_PEND) === '1') await subir();     // hay cambios locales sin subir
         else if (r.version !== version) {
             const primera = version === 0;
-            if (primera && !confirm('La hoja de Google ya tiene datos.\n\nAceptar = usar los de la hoja (se reemplazan los de este dispositivo).\nCancelar = subir los de este dispositivo y reemplazar la hoja.')) await subir(true);
-            else aplicarRemoto(r.version, r.data);
+            if (primera) {
+                const usarNube = await confirmar('Google Sheets ya contiene datos. Elige si quieres conservarlos o reemplazarlos con los de este dispositivo.', {
+                    titulo: 'Elegir datos para sincronizar',
+                    aceptarTexto: 'Usar datos de la nube',
+                    cancelarTexto: 'Sobrescribir la nube',
+                    cancelarPeligro: true,
+                    permitirCerrar: false
+                });
+                if (!usarNube) await subir(true);
+                else aplicarRemoto(r.version, r.data);
+            } else aplicarRemoto(r.version, r.data);
         }
         estado('Sincronizado');
     } catch (e) { estado('Sin conexión', true); }

@@ -1,6 +1,6 @@
 import { store, buscar, persistir } from '../store.js';
 import { esc, mxn, num, r2, uid, hoyISO, disponible } from '../utils.js';
-import { abrirModal, cerrarModal } from '../ui/modal.js';
+import { abrirModal, cerrarModal, confirmar } from '../ui/modal.js';
 import { campo, selectHTML, attrMoneda, opcionesCuentas } from '../ui/fields.js';
 import { toast, toastError } from '../ui/toast.js';
 
@@ -25,8 +25,8 @@ export function formMeta(id) {
             toast(m ? 'Meta actualizada.' : 'Meta creada.');
         },
         {
-            onDelete: m ? () => {
-                if (!confirm(`¿Eliminar la meta «${m.nombre}»?`)) return;
+            onDelete: m ? async () => {
+                if (!await confirmar(`¿Eliminar la meta «${m.nombre}»?`, { titulo: 'Eliminar meta', aceptarTexto: 'Eliminar' })) return;
                 store.data.metas = store.data.metas.filter(x => x.id !== m.id);
                 cerrarModal(); persistir(); toast('Meta eliminada.');
             } : null

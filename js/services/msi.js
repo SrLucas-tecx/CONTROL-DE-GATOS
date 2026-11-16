@@ -2,6 +2,7 @@
 // no el total de la compra. Así el "para no generar intereses" del usuario refleja lo real.
 import { store, buscar } from '../store.js';
 import { hoyISO, r2, uid } from '../utils.js';
+import { confirmar } from '../ui/modal.js';
 import { aISO } from './recurrentes.js';
 
 // Fecha de la cuota n (0 = primera) a partir de la fecha de inicio
@@ -38,14 +39,16 @@ export function aplicarMSI() {
     return total;
 }
 
-export function cancelarMSI(id) {
+export async function cancelarMSI(id) {
     const m = buscar('msi', id);
     if (!m) return false;
     if (m.cobrados.length === 0) {
-        if (!confirm(`¿Eliminar la compra «${m.nombre}»? Aún no se ha cobrado ninguna cuota.`)) return false;
+        if (!await confirmar(`¿Eliminar la compra «${m.nombre}»? Aún no se ha cobrado ninguna cuota.`, { titulo: 'Eliminar compra', aceptarTexto: 'Eliminar' })) return false;
         store.data.msi = store.data.msi.filter(x => x.id !== id);
     } else {
-        if (!confirm(`Se dejarán de cobrar las ${restantes(m)} cuotas restantes de «${m.nombre}». Las ya cobradas se conservan. ¿Continuar?`)) return false;
+        if (!await confirmar(`Se dejarán de cobrar las ${restantes(m)} cuotas restantes de «${m.nombre}». Las ya cobradas se conservan.`, {
+            titulo: 'Cancelar cuotas pendientes', aceptarTexto: 'Cancelar compra'
+        })) return false;
         m.meses = m.cobrados.length;
     }
     return true;
